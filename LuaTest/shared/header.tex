@@ -1,0 +1,28 @@
+\usepackage{graphicx}
+\usepackage{luatexja}
+\usepackage{luatexja-fontspec}
+\setmainfont{Times New Roman}
+\setmainjfont{Yu Mincho}
+\setsansjfont{Yu Mincho}
+\setmonofont{Yu Mincho}
+
+
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage{} / \pageref{LastPage}}
+
+\makeatletter
+\renewcommand{\maketitle}{
+  \begin{center}
+    {\LARGE\bfseries \@title \par}
+    \vspace{1em}
+    {\large \@author \par}
+    \vspace{0.5em}
+    {\small \@date \par}
+    \vspace{1em}
+    \rule{\linewidth}{0.5pt}
+  \end{center}
+}
+\makeatother
