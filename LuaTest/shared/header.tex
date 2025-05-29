@@ -13,16 +13,24 @@
 \fancyhf{}
 \fancyfoot[C]{\thepage{} / \pageref{LastPage}}
 
+% fixed rule macro: 80% width
+\newcommand{\fixedhrule}{
+  \noindent\rule{0.8\linewidth}{0.4pt}
+}
+
 \makeatletter
 \renewcommand{\maketitle}{
   \begin{center}
     {\LARGE\bfseries \@title \par}
     \vspace{1em}
-    {\large \@author \par}
-    \vspace{0.5em}
-    {\small \@date \par}
-    \vspace{1em}
-    \rule{\linewidth}{0.5pt}
   \end{center}
-}
+
+  \begin{flushright}  % 右寄せブロック開始
+    {\small \@author \par}              % 著者
+    \vspace{0.5em}
+    {\small \@date \par}                % 日付
+    \vspace{0.5em}\rule{\linewidth}{0.4pt} % 薄い横線
+  \end{flushright}  
+
+  }
 \makeatother

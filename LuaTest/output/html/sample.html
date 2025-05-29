@@ -21,8 +21,73 @@ margin: 0 0.8em 0.2em -1.6em;
 vertical-align: middle;
 }
 .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
 </style>
-  <style type="text/css">body {font-family: "Yu Mincho", "Times New Roman", serif;max-width: 800px;margin: auto;line-height: 1.8;padding: 2em;}.image-row {display: flex;flex-wrap: wrap;justify-content: center;gap: 8px;margin: 1em 0;}.image-row img {max-width: 18%;height: auto;cursor: zoom-in;transition: transform 0.2s;}#img-modal {display: none;position: fixed;z-index: 9999;top: 0; left: 0; right: 0; bottom: 0;background: rgba(0, 0, 0, 0.85);justify-content: center;align-items: center;}#img-modal img {max-width: 90%;max-height: 90%;box-shadow: 0 0 20px #000;cursor: zoom-out;}</style>
+  <style type="text/css">body {font-family: "Yu Mincho", "Times New Roman", serif;max-width: 800px;margin: auto;line-height: 1.8;padding: 2em;}#title-block-header{margin-bottom:1.5em;}#title-block-header .title{text-align:center;font-size:2rem;font-weight:700;margin:0 0 0.4em 0;}#title-block-header .author,#title-block-header .date{text-align:right;font-size:0.95rem;color:#444;margin:0;}#title-block-header::after{content:"";display:block;height:1px;background:#aaa;margin-top:1em;}.image-row {display: flex;flex-wrap: wrap;justify-content: center;gap: 8px;margin: 1em 0;}.image-row img {max-width: 18%;height: auto;cursor: zoom-in;transition: transform 0.2s;}#img-modal {display: none;position: fixed;z-index: 9999;top: 0; left: 0; right: 0; bottom: 0;background: rgba(0, 0, 0, 0.85);justify-content: center;align-items: center;}#img-modal img {max-width: 90%;max-height: 90%;box-shadow: 0 0 20px #000;cursor: zoom-out;}pre code {background: #f0f0f0;border: 1px solid #ccc;padding: 0.5em 0.8em;border-radius: 6px;font-family: "Yu Mincho", "Times New Roman", serif;font-size: 0.9em;line-height: 1.4;display: block;overflow-x: auto;}</style>
 </head>
 <body>
 <header id="title-block-header">
@@ -30,6 +95,7 @@ vertical-align: middle;
 <p class="author">XXXXXX</p>
 <p class="date">2025年4月</p>
 </header>
+<div class="sourceCode" id="cb1"><pre class="sourceCode txt"><code class="sourceCode default"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>コードブロックテスト</span></code></pre></div>
 <h1 id="画像テスト">画像テスト</h1>
 <h1 id="画像レイアウトテスト">画像レイアウトテスト</h1>
 <h2 id="枚縦長画像テスト">1枚（縦長画像テスト）</h2>

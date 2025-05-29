@@ -6,6 +6,29 @@ body {
   padding: 2em;
 }
 
+/* タイトルブロック ------------------------------------------- */
+#title-block-header{
+  margin-bottom:1.5em;
+}
+/* タイトル中央 */
+#title-block-header .title{
+  text-align:center;
+  font-size:2rem;font-weight:700;
+  margin:0 0 0.4em 0;
+}
+/* 著者・日付は右寄せ */
+#title-block-header .author,
+#title-block-header .date{
+  text-align:right;
+  font-size:0.95rem;color:#444;
+  margin:0;
+}
+/* 横線 */
+#title-block-header::after{
+  content:"";display:block;height:1px;
+  background:#aaa;margin-top:1em;
+}
+
 .image-row {
   display: flex;
   flex-wrap: wrap;
@@ -38,4 +61,16 @@ body {
   max-height: 90%;
   box-shadow: 0 0 20px #000;
   cursor: zoom-out;
+}
+
+pre code {
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  padding: 0.5em 0.8em;
+  border-radius: 6px;
+  font-family: "Yu Mincho", "Times New Roman", serif;
+  font-size: 0.9em;
+  line-height: 1.4;
+  display: block;
+  overflow-x: auto;
 }

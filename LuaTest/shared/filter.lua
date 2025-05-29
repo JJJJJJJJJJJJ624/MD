@@ -1,3 +1,8 @@
+-- 横線の長さをそろえる
+function HorizontalRule()
+  return pandoc.RawBlock("latex", "\\noindent\\rule{1.0\\linewidth}{0.4pt}")
+end
+
 -- 最大横並び数
 local max_per_row = 5
 
