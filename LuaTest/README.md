@@ -8,6 +8,7 @@ MD方式で書いてたら勝手にいいかんじに画像並ぶやつをちゃ
 テンプレート機能を使いこなすのがともかく難しいのかもしれない。なるべくシンプルに、luaでカバーできるかテストした  
 ↓  
 画像並べるやつはなんかうまいこといった。
+タイトル・作者・日付の配置も無難なんじゃないだろうか
 
 ## ファイル構造
 project_root/  
@@ -64,5 +65,31 @@ pandoc sample.md `
   --lua-filter=../shared/filter.lua
 ```
 
-##  convert.ps1 ― 変換スクリプト
-まだ作れてない。頑張る。
+##  build.py ― 変換スクリプト
+バージョン名同じままでも、内容が更新されていたら生成しなおす処理させるpyを作った。  
+(前はps1ファイルだったけど、単体テストもしやすいpyを採用した。)  
+夜間バッチ働かせたいなら、ps1ファイルか、batを作成する。  
+batなら、  
+```bat
+@echo off
+cd /d C:\Users\YourName\project
+python build.py
+```
+ps1なら、
+```ps1
+# build.ps1
+$projectPath = "C:\Users\YourName\project"
+cd $projectPath
+
+# 仮想環境があれば有効化
+if (Test-Path ".\venv\Scripts\Activate.ps1") {
+    . .\venv\Scripts\Activate.ps1
+}
+
+# スクリプト実行 & ログ出力
+try {
+    python build.py | Tee-Object -FilePath build.log
+} catch {
+    Write-Error "Build failed: $_"
+}
+```
