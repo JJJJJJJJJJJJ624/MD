@@ -4,6 +4,7 @@ import os
 import contextlib
 import re
 import hashlib
+from datetime import datetime
 
 # ==== 設定 ====
 ROOT = Path(__file__).resolve().parent
@@ -88,3 +89,31 @@ for manual_dir, (md, ver) in latest.items():
 
     hash_file.write_text(current_hash)
     print(f"✅ Built: {rel}")
+
+def generate_index(target_dir: Path, suffix: str, title: str):
+    entries = []
+    for file in sorted(target_dir.rglob(f"*.{suffix}")):
+        rel_path = file.relative_to(target_dir)
+        entries.append(f'<li><a href="{rel_path.as_posix()}">{rel_path}</a></li>')
+
+    index_html = f"""<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>{title}</title>
+</head>
+<body>
+  <h1>{title}</h1>
+  <p>最終更新: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+  <ul>
+    {''.join(entries)}
+  </ul>
+</body>
+</html>
+"""
+    (target_dir / "index.html").write_text(index_html, encoding="utf-8")
+    print(f"✅ index.html generated in {target_dir}")
+
+# ==== インデックス生成 ====
+generate_index(HTML_DIR, "html", "マニュアル一覧（HTML）")
+generate_index(PDF_DIR,  "pdf",  "マニュアル一覧（PDF）")
