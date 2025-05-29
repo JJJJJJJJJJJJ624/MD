@@ -13,9 +13,33 @@
 \fancyhf{}
 \fancyfoot[C]{\thepage{} / \pageref{LastPage}}
 
-% fixed rule macro: 80% width
 \newcommand{\fixedhrule}{
   \noindent\rule{0.8\linewidth}{0.4pt}
+}
+
+\usepackage{tcolorbox}
+\usepackage{listings}
+\tcbuselibrary{listings}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  breakatwhitespace=true,
+  columns=fullflexible,
+  keepspaces=true
+}
+
+\tcbset{
+  mycode/.style={
+    colback=gray!12,
+    colframe=gray!60,
+    fontupper=\ttfamily\small,
+    boxrule=0.4pt,
+    arc=2mm,
+    left=2mm,right=2mm,top=1mm,bottom=1mm,
+    listing only,
+    listing options={style=default}
+  }
 }
 
 \makeatletter

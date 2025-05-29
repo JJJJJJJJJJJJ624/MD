@@ -3,12 +3,25 @@ function HorizontalRule()
   return pandoc.RawBlock("latex", "\\noindent\\rule{1.0\\linewidth}{0.4pt}")
 end
 
+-- CodeBlock の表示スタイル
+function CodeBlock(block)
+  if FORMAT == "latex" then
+    return pandoc.RawBlock("latex", [[
+\begin{tcolorbox}[mycode]
+]] .. block.text .. [[
+\end{tcolorbox}
+]])
+  else
+    return block
+  end
+end
+
 -- 最大横並び数
 local max_per_row = 5
 
 -- 枚数に応じた画像幅（LaTeX用）
 local width_tbl = {
-  [1] = "0.60\\linewidth",
+  [1] = "0.50\\linewidth",
   [2] = "0.48\\linewidth",
   [3] = "0.31\\linewidth",
   [4] = "0.23\\linewidth",
@@ -16,7 +29,7 @@ local width_tbl = {
 }
 
 -- 1枚のときの高さ制限
-local height1 = "0.8\\textheight"
+local height1 = "0.5\\textheight"
 
 function Para(el)
   -- 画像だけで構成された段落かチェック
