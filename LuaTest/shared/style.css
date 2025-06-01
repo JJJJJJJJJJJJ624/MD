@@ -38,8 +38,9 @@ body {
 }
 
 .image-row img {
-  max-width: 18%;
+  max-height: 180px;
   height: auto;
+  width: auto;
   cursor: zoom-in;
   /* border: 1px solid #ccc; */
   transition: transform 0.2s;
@@ -61,6 +62,14 @@ body {
   max-height: 90%;
   box-shadow: 0 0 20px #000;
   cursor: zoom-out;
+}
+
+img {
+  max-width: 100%;
+  max-height: 70vh;
+  height: auto;
+  display: block;
+  margin: 1em auto;
 }
 
 pre code {

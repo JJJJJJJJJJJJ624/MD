@@ -90,30 +90,41 @@ for manual_dir, (md, ver) in latest.items():
     hash_file.write_text(current_hash)
     print(f"✅ Built: {rel}")
 
-def generate_index(target_dir: Path, suffix: str, title: str):
-    entries = []
-    for file in sorted(target_dir.rglob(f"*.{suffix}")):
-        rel_path = file.relative_to(target_dir)
-        entries.append(f'<li><a href="{rel_path.as_posix()}">{rel_path}</a></li>')
+function Generate-Index {
+    param (
+        [string]$TargetDir,
+        [string]$Suffix,
+        [string]$Title
+    )
 
-    index_html = f"""<!DOCTYPE html>
+    $now = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $entries = @()
+
+    # ファイルを再帰的に探索し、ソート
+    Get-ChildItem -Path $TargetDir -Recurse -Filter "*.$Suffix" | Sort-Object FullName | ForEach-Object {
+        $relPath = $_.FullName.Substring($TargetDir.Length).TrimStart('\','/')
+        $relPathHtml = $relPath -replace '\\', '/'
+        $entries += "    <li><a href=""$relPathHtml"">$relPathHtml</a></li>"
+    }
+
+    $htmlContent = @"
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>{title}</title>
+  <title>$Title</title>
 </head>
 <body>
-  <h1>{title}</h1>
-  <p>最終更新: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+  <h1>$Title</h1>
+  <p>最終更新: $now</p>
   <ul>
-    {''.join(entries)}
+$($entries -join "`n")
   </ul>
 </body>
 </html>
-"""
-    (target_dir / "index.html").write_text(index_html, encoding="utf-8")
-    print(f"✅ index.html generated in {target_dir}")
+"@
 
-# ==== インデックス生成 ====
-generate_index(HTML_DIR, "html", "マニュアル一覧（HTML）")
-generate_index(PDF_DIR,  "pdf",  "マニュアル一覧（PDF）")
+    $indexPath = Join-Path $TargetDir "index.html"
+    $htmlContent | Out-File -FilePath $indexPath -Encoding utf8
+    Write-Host "index.html generated in $TargetDir"
+}
