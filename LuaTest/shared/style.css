@@ -29,7 +29,7 @@ body {
   background:#aaa;margin-top:1em;
 }
 
-.image-row {
+div.image-group {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -37,7 +37,7 @@ body {
   margin: 1em 0;
 }
 
-.image-row img {
+div.image-group img {
   max-height: 180px;
   height: auto;
   width: auto;
@@ -45,6 +45,11 @@ body {
   /* border: 1px solid #ccc; */
   transition: transform 0.2s;
 }
+
+div.image-group figure figcaption {
+  text-align: center;
+}
+
 
 /* モーダル（画像拡大） */
 #img-modal {

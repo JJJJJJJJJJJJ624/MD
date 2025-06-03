@@ -1,16 +1,4 @@
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  // pタグ内でimgしか含まれてないような段落を image-row に変換
-  document.querySelectorAll("p").forEach(p => {
-    const imgs = p.querySelectorAll("img");
-    // 条件をゆるめて img が2つ以上あれば変換する（必要なら1つでもOK）
-    if (imgs.length > 0 && [...p.childNodes].every(n => n.nodeType === 3 || n.tagName === "IMG")) {
-      const div = document.createElement("div");
-      div.className = "image-row";
-      imgs.forEach(img => div.appendChild(img.cloneNode(true)));
-      p.replaceWith(div);
-    }
-  });
 
   // モーダル生成
   const modal = document.createElement("div");

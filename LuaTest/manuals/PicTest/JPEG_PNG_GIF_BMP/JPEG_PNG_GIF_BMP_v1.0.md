@@ -7,22 +7,21 @@ date: 2025年5月
 # JPEGテスト
 
 ## 1枚（縦長画像テスト）
-![](img/longest.jpg)
+![図1](img/longest.jpg)
 
 ## 1枚（横長画像テスト）
-![](img/widest.jpg)
+![図2](img/widest.jpg)
 
-***
+---
 
 ## 6枚（折り返しテスト）
-![](img/long.jpg)
-![](img/longer.jpg)
-![](img/longest.jpg)
-![](img/wide.jpg)
-![](img/wider.jpg)
-![](img/widest.jpg)
+![図3](img/long.jpg)![図4](img/longer.jpg)
+![図5](img/longest.jpg)
+![図6](img/wide.jpg)
+![図7](img/wider.jpg)
+![図8](img/widest.jpg)
 
-***
+---
 # PNGテスト
 
 ## 1枚（縦長画像テスト）

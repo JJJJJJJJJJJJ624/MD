@@ -11,6 +11,7 @@ $Share    = Join-Path $Root 'shared'
 $Css      = Join-Path $Share 'style.css'
 $Js       = Join-Path $Share 'script.js'
 $Filter   = Join-Path $Share 'filter.lua'
+$HTML_Filter   = Join-Path $Share 'html_filter.lua'
 $Header   = Join-Path $Share 'header.tex'
 $Pandoc   = 'pandoc'
 
@@ -82,24 +83,30 @@ foreach ($info in $latest.Values) {
 
     # HTML 出力
     $argsHtml = @(
-        $md,
-        "-o", $htmlOut,
+        "`"$md`"",
+        "-o", "`"$htmlOut`"",
+        "-f markdown -t html",
+        "--lua-filter=`"$HTML_Filter`"",
         "--embed-resources",
         "--standalone",
-        "--css=$Css",
-        "--include-after-body=$Js",
-        "--resource-path=$manualDir"
+        "--css=`"$Css`"",
+        "--include-after-body=`"$Js`"",
+        "--resource-path=`"$manualDir`"",
+        "--resource-path=`"$Share`""
     )
     Run-Bin -Exe $Pandoc -ArgList $argsHtml
 
     # PDF 出力
     Push-Location $manualDir
     $argsPdf = @(
-        $info.File.Name,
-        "-o", $pdfOut,
-        "--lua-filter=$Filter",
+        "`"$md`"",
+        "-o", "`"$pdfOut`"",
+        "-f markdown -t pdf",
+        "--lua-filter=`"$Filter`"",
         "--pdf-engine=lualatex",
-        "-H", $Header
+        "-H", "`"$Header`"",
+        "--resource-path=`"$manualDir`"",
+        "--resource-path=`"$Share`""
     )
     Run-Bin -Exe $Pandoc -ArgList $argsPdf
     Pop-Location
