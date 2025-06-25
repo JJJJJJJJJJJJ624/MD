@@ -63,7 +63,7 @@ foreach ($info in $latest.Values) {
     $md        = $info.File.FullName
     $manualDir = $info.File.Directory.FullName
 
-    $relStem = $md.Substring($ManDir.Length + 1) -replace '\\.md$',''
+    $relStem = $md.Substring($ManDir.Length + 1) -replace '_v.*\.md$',''
     $htmlOut = Join-Path $OutHtml "$relStem.html"
     $pdfOut  = Join-Path $OutPdf  "$relStem.pdf"
 
@@ -85,7 +85,7 @@ foreach ($info in $latest.Values) {
     $argsHtml = @(
         "`"$md`"",
         "-o", "`"$htmlOut`"",
-        "-f markdown -t html",
+        "-f markdown-implicit_figures -t html",
         "--lua-filter=`"$HTML_Filter`"",
         "--embed-resources",
         "--standalone",
@@ -98,18 +98,34 @@ foreach ($info in $latest.Values) {
 
     # PDF 出力
     Push-Location $manualDir
-    $argsPdf = @(
+
+    # (1) .tex を生成
+    $texOut = Join-Path $OutPdf "$relStem.tex"
+    $argsTex = @(
         "`"$md`"",
-        "-o", "`"$pdfOut`"",
-        "-f markdown -t pdf",
-        "--lua-filter=`"$Filter`"",
-        "--pdf-engine=lualatex",
-        "-H", "`"$Header`"",
+        "-f", "markdown-implicit_figures",
+        "-t", "latex",
+        "--lua-filter=`"$Filter`"",  # Lua フィルタがあれば適宜指定
+        "-H", "`"$Header`"",         # header.tex 指定用
         "--resource-path=`"$manualDir`"",
-        "--resource-path=`"$Share`""
+        "--resource-path=`"$Share`"",
+        "-o", "`"$texOut`""
     )
-    Run-Bin -Exe $Pandoc -ArgList $argsPdf
+    Run-Bin -Exe $Pandoc -ArgList $argsTex
+
+    # (2) lualatex で PDF を生成 (texファイルと同じフォルダに出力したい)
+    $texDir = Split-Path $texOut      # 「.tex と同じフォルダ」を取得
+    $argsLaTeX = @(
+        "-output-directory=$($texDir)",  # 出力先ディレクトリ指定
+        "-interaction=nonstopmode",      # コンパイルエラーでも止まらず処理継続
+        "`"$texOut`""                    # 対象の .tex ファイル
+    )
+    Run-Bin -Exe "lualatex" -ArgList $argsLaTeX
+    Run-Bin -Exe "lualatex" -ArgList $argsLaTeX   # 2回コンパイル（必要に応じて）
+
+
     Pop-Location
+
 }
 
 # ==== 5. インデックス生成 ====

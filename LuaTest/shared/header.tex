@@ -1,4 +1,5 @@
 \usepackage{graphicx}
+\usepackage{float}
 \usepackage{luatexja}
 \usepackage{luatexja-fontspec}
 \setmainfont{Times New Roman}
@@ -41,6 +42,12 @@
     listing options={style=default}
   }
 }
+
+% --- ここから 追記 --------------------------------
+\usepackage{caption}
+\captionsetup[figure]{labelformat=empty}  % 「図 1」のような番号付けをしない
+\captionsetup[table]{labelformat=empty}   % テーブル番号も不要なら同様に設定
+% --- ここまで 追記 --------------------------------
 
 \makeatletter
 \renewcommand{\maketitle}{

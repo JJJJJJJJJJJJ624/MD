@@ -15,7 +15,8 @@ date: 2025年5月
 ---
 
 ## 6枚（折り返しテスト）
-![図3](img/long.jpg)![図4](img/longer.jpg)
+![図3](img/long.jpg)
+![図4](img/longer.jpg)
 ![図5](img/longest.jpg)
 ![図6](img/wide.jpg)
 ![図7](img/wider.jpg)
