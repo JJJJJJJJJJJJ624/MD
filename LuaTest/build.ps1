@@ -31,7 +31,7 @@ function Compare-Version {
 }
 
 # ==== 2. 最新バージョンの Markdown 検出 ====
-$re = '_v([\d\.]+)\.md$'
+$re = '_ve?r?([\d\.]+)\.md$'
 $latest = @{}
 Get-ChildItem $ManDir -Recurse -Filter '*_v*.md' | Where-Object {
     $_.FullName -notmatch '\\old\\' -and $_.Directory.Name -notmatch '_v\d'
@@ -51,11 +51,17 @@ function Run-Bin {
         [Parameter(Mandatory)][string]$Exe,
         [Parameter(Mandatory)][string[]]$ArgList
     )
-    Write-Host "pandoc $ArgList"
+    # 実行コマンドと行番号を表示
+    Write-Host "[$($MyInvocation.ScriptName):$($MyInvocation.ScriptLineNumber)] Run $Exe with arguments: $ArgList"
+
+    # プロセス実行
     $proc = Start-Process -FilePath $Exe -ArgumentList $ArgList -NoNewWindow -Wait -PassThru
+
+    # 終了コードをチェックし、エラーがあれば位置情報と一緒に表示
     if ($proc.ExitCode -ne 0) {
-        throw "Pandoc failed with exit code $($proc.ExitCode)."
+        throw "[$($MyInvocation.ScriptName):$($MyInvocation.ScriptLineNumber)] $Exe failed with exit code $($proc.ExitCode)."
     }
+
 }
 
 # ==== 4. 変換処理 ====
@@ -81,6 +87,24 @@ foreach ($info in $latest.Values) {
     New-Item -ItemType Directory -Path (Split-Path $htmlOut) -Force | Out-Null
     New-Item -ItemType Directory -Path (Split-Path $pdfOut ) -Force | Out-Null
 
+    # (A) 画像自動回転（EXIFに従い、上書き保存 + バックアップ）
+    $imgDir = Join-Path $manualDir 'img'
+    $backupDir = Join-Path $imgDir '_backup_img'
+    New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
+
+    Get-ChildItem -Path $imgDir -Include *.jpg, *.jpeg | ForEach-Object {
+        $imgPath = $_.FullName
+        $relPath = $imgPath.Substring($imgDir.Length).TrimStart('\')
+        $bakPath = Join-Path $backupDir $relPath
+        New-Item -ItemType Directory -Path (Split-Path $bakPath) -Force | Out-Null
+        Copy-Item -Path $imgPath -Destination $bakPath -Force
+        try {
+            Run-Bin -Exe 'magick' -ArgList @('mogrify', '-auto-orient', "`"$imgPath`"")
+        } catch {
+            Write-Warning "画像の回転に失敗しました: $imgPath"
+        }
+    }
+
     # HTML 出力
     $argsHtml = @(
         "`"$md`"",
@@ -94,6 +118,7 @@ foreach ($info in $latest.Values) {
         "--resource-path=`"$manualDir`"",
         "--resource-path=`"$Share`""
     )
+    # markdown-implicit_figures-yaml_metadata_block
     Run-Bin -Exe $Pandoc -ArgList $argsHtml
 
     # PDF 出力
@@ -107,20 +132,26 @@ foreach ($info in $latest.Values) {
         "-t", "latex",
         "--lua-filter=`"$Filter`"",  # Lua フィルタがあれば適宜指定
         "-H", "`"$Header`"",         # header.tex 指定用
+        "-V", "documentclass=jlreq",
+        "-V", "luatexjapresetoptions=ipa",
+        "-V", "indent",
         "--resource-path=`"$manualDir`"",
         "--resource-path=`"$Share`"",
-        "-o", "`"$texOut`""
+        "-o", "`"$texOut`"",
+        "--verbose"
     )
+    # markdown-implicit_figures-yaml_metadata_block
     Run-Bin -Exe $Pandoc -ArgList $argsTex
 
     # (2) lualatex で PDF を生成 (texファイルと同じフォルダに出力したい)
     $texDir = Split-Path $texOut      # 「.tex と同じフォルダ」を取得
     $argsLaTeX = @(
-        "-output-directory=$($texDir)",  # 出力先ディレクトリ指定
+        "-output-directory=`"$($texDir)`"",  # 出力先ディレクトリ指定
         "-interaction=nonstopmode",      # コンパイルエラーでも止まらず処理継続
         "`"$texOut`""                    # 対象の .tex ファイル
     )
     Run-Bin -Exe "lualatex" -ArgList $argsLaTeX
+    Start-Sleep -Seconds 1   # ← ここで1秒待機
     Run-Bin -Exe "lualatex" -ArgList $argsLaTeX   # 2回コンパイル（必要に応じて）
 
 

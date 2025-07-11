@@ -1,7 +1,7 @@
 -- 画像のみの段落(Para)を検出して、HTML出力時は<div>＋<figure>構造へ変換。
 -- altテキストが空でも <figcaption> は常に出力する。
 
-function Para(el)
+function image_changer(el)
   -- 画像だけで構成されているか確認
   local images = {}
   for _, inl in ipairs(el.content) do
@@ -28,7 +28,7 @@ function Para(el)
     local altText = pandoc.utils.stringify(img.caption)  -- altテキスト（キャプション）
     -- 空の altText でも figcaption を必ず出力
     local figureHtml = string.format([[
-<figure>
+<figure class="image-row">
   <img src="%s" alt="%s" />
   <figcaption>%s</figcaption>
 </figure>]], img.src, altText, altText)
@@ -37,4 +37,20 @@ function Para(el)
   end
 
   return pandoc.Div(figureBlocks, {class = "image-group"})
+
+end
+
+-- ヘッダブロックをデバッグ表示
+function Header(el)
+    return image_changer(el)
+end
+
+
+function Para(el)
+    return image_changer(el)
+end
+
+-- Plain(改行のみの段落扱い)ブロックも確認したい場合
+function Plain(el)
+    return image_changer(el)
 end

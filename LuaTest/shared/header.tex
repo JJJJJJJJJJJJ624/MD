@@ -1,11 +1,12 @@
+%\usepackage{amsfonts, latexsym}
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{luatexja}
 \usepackage{luatexja-fontspec}
-\setmainfont{Times New Roman}
-\setmainjfont{Yu Mincho}
-\setsansjfont{Yu Mincho}
-\setmonofont{Yu Mincho}
+%\setmainfont{Times New Roman}
+%\setmainjfont{Yu Mincho}
+%\setsansjfont{Yu Mincho}
+%\setmonofont{Yu Mincho}
 
 
 \usepackage{fancyhdr}
@@ -44,9 +45,13 @@
 }
 
 % --- ここから 追記 --------------------------------
-\usepackage{caption}
+\usepackage[hang,small,bf]{caption}
 \captionsetup[figure]{labelformat=empty}  % 「図 1」のような番号付けをしない
 \captionsetup[table]{labelformat=empty}   % テーブル番号も不要なら同様に設定
+
+\usepackage[subrefformat=parens]{subcaption}
+\captionsetup{compatibility=false}
+
 % --- ここまで 追記 --------------------------------
 
 \makeatletter
@@ -65,3 +70,8 @@
 
   }
 \makeatother
+
+\usepackage{tikz}
+\newcommand{\maru}[1]{%
+  \tikz[baseline=(char.base)]\node[shape=circle,draw,inner sep=1pt] (char) {#1};%
+}
