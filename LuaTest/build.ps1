@@ -159,7 +159,7 @@ foreach ($info in $latest.Values) {
     $texDir = Split-Path $texOut     # 「.tex と同じフォルダ」を取得
 #    $texOut = Get-ShortPath($texOut)
     $argsLaTeX = @(
-        "-output-directory=$($texDir -replace '\\', '/')",  # 出力先ディレクトリ指定
+        "-output-directory=`"$($texDir -replace '\\', '/')`"",  # 出力先ディレクトリ指定
         "-interaction=nonstopmode",      # コンパイルエラーでも止まらず処理継続
         "`"$($texOut -replace '\\', '/')`""     # 対象の .tex ファイル
     )
