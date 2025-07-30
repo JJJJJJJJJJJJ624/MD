@@ -161,7 +161,6 @@ foreach ($info in $latest.Values) {
     $argsLaTeX = @(
         "-output-directory=$($texDir -replace '\\', '/')",  # 出力先ディレクトリ指定
         "-interaction=nonstopmode",      # コンパイルエラーでも止まらず処理継続
-        "-jobname=`"$($pdfOut -replace '\\', '/')`"",
         "`"$($texOut -replace '\\', '/')`""     # 対象の .tex ファイル
     )
     Write-Output $argsLaTeX
