@@ -17,6 +17,14 @@ $HTML_Filter   = Join-Path $Share 'html_filter.lua'
 $Header   = Join-Path $Share 'header.tex'
 $Pandoc   = 'pandoc'
 
+# ==== 0. util関数 ====
+
+# ====  ShortPathの取得    ====
+function Get-ShortPath($path) {
+    $fso = New-Object -ComObject Scripting.FileSystemObject
+    return $fso.GetFile($path).ShortPath
+}
+
 # ==== 1. バージョン比較関数 ====
 function Compare-Version {
     param ([string]$a, [string]$b)
@@ -146,15 +154,48 @@ foreach ($info in $latest.Values) {
     Run-Bin -Exe $Pandoc -ArgList $argsTex
 
     # (2) lualatex で PDF を生成 (texファイルと同じフォルダに出力したい)
-    $texDir = Split-Path $texOut      # 「.tex と同じフォルダ」を取得
+    $pdfOut = (Get-Item $texOut).BaseName
+#    $texOut = Get-ShortPath($texOut)
+    $texDir = Split-Path $texOut     # 「.tex と同じフォルダ」を取得
+#    $texOut = Get-ShortPath($texOut)
     $argsLaTeX = @(
-        "-output-directory=`"$($texDir)`"",  # 出力先ディレクトリ指定
+        "-output-directory=$($texDir -replace '\\', '/')",  # 出力先ディレクトリ指定
         "-interaction=nonstopmode",      # コンパイルエラーでも止まらず処理継続
-        "`"$texOut`""                    # 対象の .tex ファイル
+        "-jobname=`"$($pdfOut -replace '\\', '/')`"",
+        "`"$($texOut -replace '\\', '/')`""     # 対象の .tex ファイル
     )
+    Write-Output $argsLaTeX
     Run-Bin -Exe "lualatex" -ArgList $argsLaTeX
     Start-Sleep -Seconds 1   # ← ここで1秒待機
     Run-Bin -Exe "lualatex" -ArgList $argsLaTeX   # 2回コンパイル（必要に応じて）
+
+#    # .texファイルのフルパスが入っていると仮定
+#    $texFileFullPath = $texOut  # ここに .tex ファイルのパスが入っている
+#
+#    # PDF出力先を組み立てる (拡張子を .pdf に)
+#    $pandocPdfOutPath = Join-Path ($texDir) ("$pdfOut.pdf")
+#
+#    # もし LuaLaTeX の lua-filter を使う必要があれば、--lua-filter=... の指定を入れる
+#    # 例: '--lua-filter="C:\Users\Palladium\Documents\PycharmProjects\MD\LuaTest\shared\filter.lua"'
+#    $pandocArgs = @(
+#        '-f', 'latex',               # 入力フォーマット: LaTeX
+#        '-t', 'pdf',                 # 出力フォーマット: PDF
+#        '--pdf-engine=lualatex',     # PDF生成に LuaLaTeX を使う
+#        "-H", "`"$Header`"",         # header.tex 指定用
+#        "-V", "documentclass=jlreq",
+#        "-V", "luatexjapresetoptions=ipa",
+#        "-V", "indent",
+#        "--resource-path=`"$manualDir`"",
+#        "--resource-path=`"$Share`"",
+#        '-o', "`"$pandocPdfOutPath`"",     # 出力先指定
+#        "`"$texFileFullPath`""            # 入力ファイル(.tex)
+#    )
+#
+#    Write-Output $pandocArgs
+#
+#    # 上記で用意した引数をもとに pandoc を実行
+#    Run-Bin -Exe "pandoc" -ArgList $pandocArgs
+
 
 
     Pop-Location
