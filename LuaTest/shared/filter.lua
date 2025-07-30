@@ -16,6 +16,133 @@ function CodeBlock(block)
   end
 end
 
+--安全print
+function print_s(str)
+    io.stderr:write(str .. "\n")   -- こちらなら Pandoc の JSON を汚さない
+end
+
+-- utf8_find関数
+-- s     : UTF-8文字列
+-- pattern: UTF-8文字列の検索パターン
+-- init  : オプション。検索開始バイト位置(省略時は1)
+-- 戻り値: 見つかった場合 -> (開始バイト位置, 終了バイト位置)
+--         見つからない場合 -> nil
+function utf8_find(s, pattern, init)
+  init = init or 1
+  if init < 1 then
+    init = 1
+  end
+
+  -- 検索対象文字列をコードポイントとそのバイトオフセットの対応で保持
+  local s_cp = {}
+  for bytePos, code in utf8.codes(s) do
+    table.insert(s_cp, {pos = bytePos, cp = code})
+  end
+
+  local p_cp = {}
+  for bytePos, code in utf8.codes(pattern) do
+    table.insert(p_cp, code) -- パターンはコードだけで十分
+  end
+
+--   print_s(dump(s_cp))
+--   print_s(dump(p_cp))
+
+  -- パターンのコードポイント数
+  local plen = #p_cp
+
+  if plen == 0 then
+    return init, init - 1  -- パターンが空の場合の挙動(一応定義)
+  end
+
+  -- s_cp上を先頭から(ただしinit以上のバイトオフセットから)総当り検索
+  local iStart = 1
+  -- initバイト位置に相当するインデックスを探す
+  for i = 1, #s_cp do
+    if s_cp[i].pos >= init then
+      iStart = i
+      break
+    end
+  end
+
+  for i = iStart, #s_cp - plen + 1 do
+    local match = true
+    for j = 0, plen - 1 do
+      if s_cp[i + j].cp ~= p_cp[j + 1] then
+        match = false
+        break
+      end
+    end
+    if match then
+      -- マッチした場合、開始バイトと終了バイトを計算
+      local startByte = s_cp[i].pos
+      local endByte
+      if (i + plen - 1) < #s_cp then
+        -- 次の文字のバイトオフセット-1 が終了位置
+        endByte = s_cp[i + plen].pos - 1
+      else
+        -- パターンが末尾まで一致したので、文字列終端まで
+        endByte = #s
+      end
+      return startByte, endByte
+    end
+  end
+  return nil  -- 見つからなかった
+end
+
+
+-- utf8_replace関数
+-- s      : UTF-8文字列
+-- pattern: 置換したい(検索)パターン(UTF-8文字列)
+-- repl   : 置き換え先文字列(UTF-8)
+-- limit  : 置換回数の上限。省略時はすべて置換
+-- 戻り値 : 置換後の文字列
+function utf8_replace(s, pattern, repl, limit)
+  limit = limit or math.huge  -- 指定がない場合は無制限
+
+  local result = {}
+  local count = 0
+  local currentPos = 1
+
+  while count < limit do
+    local startPos, endPos = utf8_find(s, pattern, currentPos)
+    if not startPos then
+      -- もう見つからないので残りを全部追加して終了
+      table.insert(result, s:sub(currentPos))
+      break
+    end
+
+    -- 見つかった部分までを追加
+    table.insert(result, s:sub(currentPos, startPos - 1))
+    -- 置換文字を追加
+    table.insert(result, repl)
+
+    count = count + 1
+    -- 次の検索開始バイト位置を更新
+    currentPos = endPos + 1
+  end
+
+  if count >= limit then
+    -- limit回置換を終えてまだ文字列が残っていれば追加
+    table.insert(result, s:sub(currentPos))
+  end
+
+  return table.concat(result)
+end
+
+-- -- テスト例
+-- local text = "あいうえおあいうえお"
+-- local p    = "うえ"
+-- local r    = "【置換】"
+--
+-- local foundStart, foundEnd = utf8_find(text, p)
+-- print("find:", foundStart, foundEnd)
+-- -- → find: 7 10 (※環境や実装方法により異なる場合もあります)
+--
+-- local replaced = utf8_replace(text, p, r)
+-- print("replace:", replaced)
+-- -- → replace: あい【置換】おあい【置換】お
+
+
 -- --デバッグ関数
 -- function debugHeader(el)
 --   print(string.format("----- DEBUG: Header (level=%d) が検出されました -----", el.level))
@@ -444,10 +571,6 @@ local function transform_images_in_block(el)
 
   local replacedInlines = transform_images_in_inlines(el.content)
 
-  print("#####\n")
-  print(dump(replacedInlines))
-  print("#####\n")
-
   if el.t == "Para" then
     return sprit_Block_Inline(replacedInlines, pandoc.Para)
   elseif el.t == "Plain" then
@@ -458,55 +581,77 @@ local function transform_images_in_block(el)
   return nil
 end
 
-function Header(el)
-  return transform_images_in_block(el)
-end
-
-function Para(el)
-  return transform_images_in_block(el)
-end
-
-function Plain(el)
-  return transform_images_in_block(el)
-end
-
 -- codeblock-to-lstlisting.lua
 function CodeBlock(el)
   return pandoc.RawBlock("latex", "\\begin{tcolorbox}[mycode]\n\\begin{lstlisting}\n" .. el.text .. "\n\\end{lstlisting}\n\\end{tcolorbox}")
 end
 
-
 -- 丸数字 → 通常数字へのマッピング（①〜⑳）
 -- 丸数字のマッピング表
 local maru_map = {
+  ["➀"] = "1", ["➁"] = "2", ["➂"] = "3", ["➃"] = "4", ["➄"] = "5",
+  ["➅"] = "6", ["➆"] = "7", ["➇"] = "8", ["➈"] = "9", ["➉"] = "10",
   ["①"] = "1", ["②"] = "2", ["③"] = "3", ["④"] = "4", ["⑤"] = "5",
   ["⑥"] = "6", ["⑦"] = "7", ["⑧"] = "8", ["⑨"] = "9", ["⑩"] = "10",
   ["⑪"] = "11", ["⑫"] = "12", ["⑬"] = "13", ["⑭"] = "14", ["⑮"] = "15",
   ["⑯"] = "16", ["⑰"] = "17", ["⑱"] = "18", ["⑲"] = "19", ["⑳"] = "20"
 }
 
--- 置換処理：LaTeX用に丸数字を置き換える
-function replace_maru(text)
+local function replace_maru_in_str(str)
+  local changed = false
+  local str = pandoc.utils.stringify(str)
   for k, v in pairs(maru_map) do
-      print(text)
-    text = text:gsub(k, "\\maru{" .. v .. "}")
+    if str:find(k) then
+      str = str:gsub(k, "\\maru{" .. v .. "}")
+      changed = true
+    end
   end
-  return text
+  return str, changed
 end
 
--- -- Para（段落）と Plain（箇条書き等）を対象に処理
--- function Para(el)
---   local raw = pandoc.utils.stringify(el)
---   local replaced = replace_maru(raw)
---   if replaced ~= raw then
---     return transform_images_in_block(pandoc.RawInline("latex", replaced))
---   end
--- end
---
--- function Plain(el)
---   local raw = pandoc.utils.stringify(el)
---   local replaced = replace_maru(raw)
---   if replaced ~= raw then
---     return transform_images_in_block(pandoc.RawInline("latex", replaced))
---   end
--- end
+function transform_maru_in_str(el)
+  local changed = false
+  local new_inlines = {}
+  local func = {}
+  local index = 0
+  if el.t == "Para" then
+      func = pandoc.Para
+  elseif el.t == "Plain" then
+      func = pandoc.Plain
+  end
+
+  for _, inline in ipairs(el.content) do
+    if inline.t == "Str" then
+      local replaced, was_changed = replace_maru_in_str(inline.text)
+      if was_changed then
+        table.insert(new_inlines, pandoc.RawInline("latex", replaced))
+        changed = true
+        index = index + 1
+      else
+        table.insert(new_inlines, inline)
+      end
+    else
+      table.insert(new_inlines, inline)
+    end
+  end
+
+  if changed then
+    return func(new_inlines)
+  else
+    return el  -- 元のまま返す
+  end
+end
+
+function Header(el)
+  return transform_images_in_block(el)
+end
+
+function Para(el)
+    el = transform_maru_in_str(el)
+  return transform_images_in_block(el)
+end
+
+function Plain(el)
+    el = transform_maru_in_str(el)
+  return transform_images_in_block(el)
+end

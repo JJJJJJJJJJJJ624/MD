@@ -1,5 +1,7 @@
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+$OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::OutputEncoding  = [System.Text.Encoding]::UTF8
 
 # ==== 0. パス定義 ====
 $Root     = Split-Path -Parent $MyInvocation.MyCommand.Path
