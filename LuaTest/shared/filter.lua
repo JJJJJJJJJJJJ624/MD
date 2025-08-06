@@ -642,16 +642,71 @@ function transform_maru_in_str(el)
   end
 end
 
+
+-- TeXの制御文字 → エスケープ文字
+-- TeXの制御文字のマッピング表
+local TeX_map = {
+  ["\\"] = "\\textbackslash", ["#"] = "\\#", ["%$"] = "\\$", ["%%"] = "\\%%", ["&"] = "\\&",
+  ["~"] = "\\textasciitilde", ["%^"] = "\\textasciicircum", ["{"] = "\\{{", ["}"] = "\\}",
+}
+
+local function replace_controlling_TeX_in_str(str)
+  local changed = false
+  local str = pandoc.utils.stringify(str)
+  for k, v in pairs(TeX_map) do
+    if str:find(k) then
+      str = str:gsub(k, v)
+      changed = true
+    end
+  end
+  return str, changed
+end
+
+function transform_controlling_TeX_in_str(el)
+  local changed = false
+  local new_inlines = {}
+  local func = {}
+  local index = 0
+  if el.t == "Para" then
+      func = pandoc.Para
+  elseif el.t == "Plain" then
+      func = pandoc.Plain
+  end
+
+  for _, inline in ipairs(el.content) do
+    if inline.t == "Str" then
+      local replaced, was_changed = replace_controlling_TeX_in_str(inline.text)
+      if was_changed then
+        table.insert(new_inlines, pandoc.RawInline("latex", replaced))
+        changed = true
+        index = index + 1
+      else
+        table.insert(new_inlines, inline)
+      end
+    else
+      table.insert(new_inlines, inline)
+    end
+  end
+
+  if changed then
+    return func(new_inlines)
+  else
+    return el  -- 元のまま返す
+  end
+end
+
 function Header(el)
   return transform_images_in_block(el)
 end
 
 function Para(el)
     el = transform_maru_in_str(el)
+    el = transform_controlling_TeX_in_str(el)
   return transform_images_in_block(el)
 end
 
 function Plain(el)
     el = transform_maru_in_str(el)
+    el = transform_controlling_TeX_in_str(el)
   return transform_images_in_block(el)
 end
