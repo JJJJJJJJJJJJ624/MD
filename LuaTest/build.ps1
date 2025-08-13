@@ -15,7 +15,8 @@ $ErrDir   = Join-Path $ManDir 'Err'
 $versionFile = Join-Path $Root "latest_versions.txt"
 
 $Css      = Join-Path $Share 'style.css'
-$Js       = Join-Path $Share 'script.js'
+# $Js       = Join-Path $Share 'script.js'
+$Js       = Join-Path $Share 'script.html'
 $Filter   = Join-Path $Share 'filter.lua'
 $HTML_Filter   = Join-Path $Share 'html_filter.lua'
 $HTML_Temlate = Join-Path $Share 'template.html'

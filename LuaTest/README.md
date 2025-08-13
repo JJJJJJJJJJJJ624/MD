@@ -1,95 +1,86 @@
-# Markdown→PDF/html
-なんか関数使って横並び処理させてると、メンテナンス性悪そうだし、初稿の質の悪さに気づきにくそう。なんとか作り手に優しいものを作りたい。  
-↓  
-MD方式で書いてたら勝手にいいかんじに画像並ぶやつをちゃんと目指す。
+# MD→PDF/HTML
 
-## なんかいい感じに出来そうだった方法
-**PDFはluaで頑張って、htmlはjsで頑張る**   
-テンプレート機能を使いこなすのがともかく難しいのかもしれない。なるべくシンプルに、luaでカバーできるかテストした  
-↓  
-画像並べるやつはなんかうまいこといった。
-タイトル・作者・日付の配置も無難なんじゃないだろうか
+## 概要
 
-## ファイル構造
-project_root/  
-├── manuals/ # 各マニュアル専用フォルダ  
-│ ├── A001_Manual1/  
-│ │ ├── A001_Manual1_v1.2.md # ★ 最新版 Markdown  
-│ │ ├── img/ # 最新版で使う画像  
-│ │ │ └── fig1.png  
-│ │ └── oldversions/ # 旧バージョン収納  
-│ │ │ ├── A001_Manual1_v1.0  
-│ │ │ │ ├── A001_Manual1_v1.0.md  
-│ │ │ │ └── img/ # 旧バージョン収納  
-│ │ │ └── A001_Manual1_v1.1/ ...  
-│ └── A002_Manual2/ ...  
-│  
-├── shared/ # 共有テンプレート・フィルタ  
-│ ├── filter.lua  
-│ └── なんかいろいろhtmlいいかんじに出力させるやつ  
-│  
-├── output/ # ★ バッチ生成物を集中管理  
-│ ├── html/ # latest 版のみ  
-│ │ ├── A001_Manual1.html  
-│ │ ├── A002_Manual2.html  
-│ │ └── index.html # 自動生成の目次  
-│ └── pdf/  
-│ ├── A001_Manual1.pdf  
-│ └── A002_Manual2.pdf  
-│  
-├── convert.ps1 # PowerShell 自動変換スクリプト  
-└── README.md  
+Markdown（.md）で作成したマニュアルを HTML と PDF に変換。  
+画像サイズとかいい感じに揃う。  
+Pandoc と Lua フィルタを活用して、レイアウトの自動整形とスタイル統一を行う。
 
-## とりあえずのpandoc変換
+---
 
-html変換  
-プロジェクトルートで実行するやつを以下に書いておく
-```txt
-pandoc manuals/sample.md `
-  -o output/html/sample.html `
-  --embed-resources `
-  --standalone `
-  --css shared/style.css `
-  --include-after-body=shared/script.js `
-  --resource-path=manuals
+## 必要環境
+
+- Pandoc
+-  LuaLaTeX（TeX Live）
+-  ImageMagick（画像の自動回転補正のため）
+-  PowerShell
+
+---
+
+## 主な機能
+
+- **HTML 出力**
+  -  独自テンプレート（`template.html`）+ CSS（`style.css`）
+  -  画像クリックでモーダル拡大（`script.js`）
+- **PDF 出力**
+  - LuaLaTeX によりいいかんじに出力される
+  - ページ番号・最終ページ番号の自動設定がなされる
+- **画像自動並び（Lua フィルタ）**
+  - 複数画像を横並びレイアウトに自動変換
+  - HTML / PDF 双方で整列
+- **リソースの埋め込み**
+  - CSS / JS / 画像を HTML 内にインライン化可能
+
+---
+
+## ビルド方法
+
+### HTMLビルド例
+
+cd XXXX\XXXXX
+でフォルダに移ってから、
+
+```powershell
+pandoc manuals\Sample\sampleA_v1.md `
+  -o output\html\sampleA_v1.html `
+  -f markdown-implicit_figures -t html `
+  --template shared\template.html `
+  --embed-resources --standalone `
+  --css shared\style.css `
+  --include-after-body shared\script.html `
+  --lua-filter shared\html_filter.lua `
+  --resource-path "manuals\Sample;shared"
 ```
 
-pdf変換  
-なんかcd使って移動しないとうまく動作しなかった。
-```txt
-cd manuals  (マニュアルが置いてあるフォルダに移る)
-pandoc sample.md `  
-  -o ../output/pdf/sample.pdf `  
-  --pdf-engine=lualatex `  
-  -H ../shared/header.tex `  
-  --lua-filter=../shared/filter.lua
+### PDFビルド例
+
+```powershell
+pandoc manuals\Sample\sampleA_v1.md `
+  -o output\pdf\sampleA_v1.pdf `
+  --template=shared\template.tex `
+  --lua-filter shared\pdf_filter.lua `
+  --pdf-engine=lualatex
 ```
 
-##  build.py ― 変換スクリプト
-バージョン名同じままでも、内容が更新されていたら生成しなおす処理させるpyを作った。  
-(前はps1ファイルだったけど、単体テストもしやすいpyを採用した。)  
-夜間バッチ働かせたいなら、ps1ファイルか、batを作成する。  
-batなら、  
-```bat
-@echo off
-cd /d C:\Users\YourName\project
-python build.py
-```
-ps1なら、
-```ps1
-# build.ps1
-$projectPath = "C:\Users\YourName\project"
-cd $projectPath
+※ LaTeX の最終ページ番号を正しく表示するためには 2回コンパイル推奨。
 
-# 仮想環境があれば有効化
-if (Test-Path ".\venv\Scripts\Activate.ps1") {
-    . .\venv\Scripts\Activate.ps1
-}
+---
 
-# スクリプト実行 & ログ出力
-try {
-    python build.py | Tee-Object -FilePath build.log
-} catch {
-    Write-Error "Build failed: $_"
-}
+## ファイル構成
+
 ```
+manuals/           ← 原稿Markdown
+shared/
+  ├─ template.html ← HTMLテンプレート
+  ├─ template.tex  ← PDFテンプレート
+  ├─ style.css     ← HTML用CSS
+  ├─ script.html   ← HTML末尾に挿入するJS読み込みタグ
+  ├─ script.js(※) ← モーダル動作用JavaScript、script.htmlへ移行予定
+  ├─ html_filter.lua
+  └─ pdf_filter.lua
+output/
+  ├─ html/         ← HTML出力先
+  └─ pdf/          ← PDF出力先
+build.ps1          ← ビルドスクリプト
+```
+

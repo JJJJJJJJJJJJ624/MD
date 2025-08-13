@@ -63,11 +63,53 @@ div.image-group figure figcaption {
   align-items: center;
 }
 
-#img-modal img {
-  max-width: 90%;
-  max-height: 90%;
-  box-shadow: 0 0 20px #000;
-  cursor: zoom-out;
+.no-scroll{ overflow:hidden; }
+
+.img-modal__backdrop{
+  position:absolute; inset:0;
+  background:rgba(0,0,0,.85);
+}
+
+.img-modal__panel{
+  position:relative;           /* ← ×ボタン固定基準(画像右上)*/
+  margin:0;
+  max-width:95vw; max-height:95vh;
+  display:flex; flex-direction:column; align-items:center;
+}
+
+.img-modal__caption{
+  margin-top:.5rem; color:#ddd; font-size:.9em; text-align:center;
+}
+
+/* 画像の右上に“半透明丸”の×ボタンを固定 */
+.img-modal__close{
+  position:absolute;
+  top:.4rem; right:.4rem;
+  width:40px; height:40px;
+  border:none; border-radius:999px;
+  background:rgba(255,255,255,.28);   /* 半透明 */
+  color:#fff; font-size:22px; font-weight:700;
+  line-height:40px; text-align:center;
+  cursor:pointer;
+  backdrop-filter:saturate(140%) blur(2px); /* 背景を少しなめらかに */
+  box-shadow:0 2px 10px rgba(0,0,0,.35);
+  transition:background .15s ease, transform .08s ease, color .15s ease;
+}
+
+/* is-open が付いたら表示 */
+#img-modal.is-open { display: flex; }
+
+/* ホバー/フォーカス時の反応（視認性アップ） */
+.img-modal__close:hover,
+.img-modal__close:focus-visible{
+  background:rgba(255,255,255,.45);
+  color:#000;
+  outline:none;
+}
+
+/* クリック中の小さな縮小アニメ */
+.img-modal__close:active{
+  transform:scale(.96);
 }
 
 img {
@@ -89,3 +131,4 @@ pre code {
   display: block;
   overflow-x: auto;
 }
+
