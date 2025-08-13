@@ -575,8 +575,8 @@ local function transform_images_in_block(el)
     return sprit_Block_Inline(replacedInlines, pandoc.Para)
   elseif el.t == "Plain" then
     return sprit_Block_Inline(replacedInlines, pandoc.Plain)
-  elseif el.t == "Header" then
-    return pandoc.Header(el.level, replacedInlines, el.attr)
+  -- elseif el.t == "Header" then
+  --   return pandoc.Header(el.level, replacedInlines, el.attr)
   end
   return nil
 end
@@ -701,12 +701,14 @@ end
 
 function Para(el)
     el = transform_maru_in_str(el)
-    el = transform_controlling_TeX_in_str(el)
+    -- ↓無効化テスト
+    -- el = transform_controlling_TeX_in_str(el)
   return transform_images_in_block(el)
 end
 
 function Plain(el)
     el = transform_maru_in_str(el)
-    el = transform_controlling_TeX_in_str(el)
+    -- ↓無効化テスト
+    -- el = transform_controlling_TeX_in_str(el)
   return transform_images_in_block(el)
 end
