@@ -33,17 +33,37 @@ XXXXXX
 <p class="date">2025年8月</p>
 </header>
 <h1 id="特殊文字祭り">特殊文字祭り</h1>
-<h2 id="通常文字">通常文字</h2>
-<p>% パーセント, _ アンダースコア, # ハッシュ, &amp; アンパサンド, $
-ドル, { } 波括弧, ~ チルダ, ^ ハット</p>
+<h2 id="lua">LUA</h2>
+<pre><code>-- TeXの制御文字 → エスケープ文字
+-- TeXの制御文字のマッピング表
+local TeX_map = {
+  [&quot;\\&quot;] = &quot;\\textbackslash&quot;, [&quot;#&quot;] = &quot;\\#&quot;, [&quot;%$&quot;] = &quot;\\$&quot;, [&quot;%%&quot;] = &quot;\\%%&quot;, [&quot;&amp;&quot;] = &quot;\\&amp;&quot;,
+  [&quot;~&quot;] = &quot;\\textasciitilde&quot;, [&quot;%^&quot;] = &quot;\\textasciicircum&quot;, [&quot;{&quot;] = &quot;\\{{&quot;, [&quot;}&quot;] = &quot;\\}&quot;,
+}</code></pre>
+<h2 id="通常文中para-plain">通常文中（Para / Plain）</h2>
+<ul>
+<li>バックスラッシュ: <code>\\</code> → 1つの <code>\</code></li>
+<li>ハッシュ: #</li>
+<li>ドル: $</li>
+<li>パーセント: %</li>
+<li>アンパサンド: &amp;</li>
+<li>チルダ: ~</li>
+<li>ハット: ^</li>
+<li>波括弧(開): {</li>
+<li>波括弧(閉): }</li>
+</ul>
+<p><strong>まとめて一行</strong>： <code>\\</code> # $ % &amp; ~ ^ {
+}</p>
 <h2 id="url-パス">URL / パス</h2>
 <ul>
+<li><a href="https://example.com/a_b?x=1&amp;y=2#sec">テキスト: # $ %
+&amp; ~ ^ { } \</a></li>
 <li>https://example.com/a_b?x=1&amp;y=2#sec</li>
 <li>C:_v1.2%bar.txt</li>
 </ul>
 <h2 id="インラインコード">インラインコード</h2>
 <p><code>a_b_c</code>, <code>100%</code>, <code>x^2</code>,
-<code>C:\path\foo</code></p>
+<code>C:\path\foo</code>, <code>\{raw\}</code></p>
 <h2 id="コードブロック">コードブロック</h2>
 <pre class="text"><code>a_b_c
 100%
@@ -57,6 +77,36 @@ x^2 + y^2
 <h2 id="矢印記号">矢印・記号</h2>
 <p>→：<code>-&gt;</code>, ⇔：<code>&lt;-&gt;</code><br />
 ≦：<code>&lt;=</code>, ≧：<code>&gt;=</code>, ±：<code>+-</code></p>
+<h2 id="リストparagraphの一種-置換されるべき">リスト（Paragraphの一種）—
+<strong>置換されるべき</strong></h2>
+<ul>
+<li># $ % &amp; ~ ^ { } \</li>
+<li>Windowsパス例:
+<code>C:\\Users\\foo\\bar</code>（※インラインコードなので置換禁止）</li>
+</ul>
+<h2 id="表tableセルは基本テキスト-置換されるべき">表（Tableセルは基本テキスト）—
+<strong>置換されるべき</strong></h2>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>含む文字</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>記号列</td>
+<td># $ % &amp; ~ ^ { } \</td>
+</tr>
+</tbody>
+</table>
+<h2 id="連続境界">連続／境界</h2>
+<ul>
+<li>記号連結1: #$%&amp;~^{}\</li>
+<li>記号連結2: \ # \ $ \ % \ &amp; \ ~ \ ^ \ { \ }</li>
+<li>文末＆行頭: 文末%<br />
+次行先頭# 次行先頭$</li>
+</ul>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   // 多重初期化ガード

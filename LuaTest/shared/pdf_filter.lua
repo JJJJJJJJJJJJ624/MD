@@ -3,18 +3,18 @@ function HorizontalRule()
   return pandoc.RawBlock("latex", "\\noindent\\rule{1.0\\linewidth}{0.4pt}")
 end
 
--- CodeBlock の表示スタイル
-function CodeBlock(block)
-  if FORMAT == "latex" then
-    return pandoc.RawBlock("latex", [[
-\begin{tcolorbox}[mycode]
-]] .. block.text .. [[
-\end{tcolorbox}
-]])
-  else
-    return block
-  end
-end
+-- -- CodeBlock の表示スタイル
+-- function CodeBlock(block)
+--   if FORMAT == "latex" then
+--     return pandoc.RawBlock("latex", [[
+-- \begin{tcolorbox}[mycode]
+-- ]] .. block.text .. [[
+-- \end{tcolorbox}
+-- ]])
+--   else
+--     return block
+--   end
+-- end
 
 --安全print
 function print_s(str)
@@ -642,73 +642,208 @@ function transform_maru_in_str(el)
   end
 end
 
-
--- TeXの制御文字 → エスケープ文字
--- TeXの制御文字のマッピング表
-local TeX_map = {
-  ["\\"] = "\\textbackslash", ["#"] = "\\#", ["%$"] = "\\$", ["%%"] = "\\%%", ["&"] = "\\&",
-  ["~"] = "\\textasciitilde", ["%^"] = "\\textasciicircum", ["{"] = "\\{{", ["}"] = "\\}",
+-- 1文字ごとの安全エスケープ（置換後の文字列を再処理しない）
+local TEX_MAP = {
+  ["\\"] = "\\textbackslash{}",
+  ["#"]  = "\\#",
+  ["$"]  = "\\$",
+  ["%"]  = "\\%",
+  ["&"]  = "\\&",
+  ["~"]  = "\\textasciitilde{}",
+  ["^"]  = "\\textasciicircum{}",
+  ["{"]  = "\\{",
+  ["}"]  = "\\}",
 }
-
-local function replace_controlling_TeX_in_str(str)
-  local changed = false
-  local str = pandoc.utils.stringify(str)
-  for k, v in pairs(TeX_map) do
-    if str:find(k) then
-      str = str:gsub(k, v)
-      changed = true
-    end
+local function escape_tex_string(s)
+  local out = {}
+  for _, cp in utf8.codes(s) do
+    local ch = utf8.char(cp)
+    out[#out+1] = TEX_MAP[ch] or ch
   end
-  return str, changed
+  return table.concat(out)
 end
 
-function transform_controlling_TeX_in_str(el)
-  local changed = false
-  local new_inlines = {}
-  local func = {}
-  local index = 0
-  if el.t == "Para" then
-      func = pandoc.Para
-  elseif el.t == "Plain" then
-      func = pandoc.Plain
+-- C:\... を確実に 1 塊へ（Str だけで判定。raw_tex を切る前提）
+local function protect_windows_paths_in_inlines(inlines)
+  local out = {}
+  local i, n = 1, #inlines
+
+  local function is_path_piece(tok)
+    return tok.t == "Str" and (
+      tok.text == "\\" or
+      tok.text:match("^[%w%._%%%-]+$") ~= nil
+    )
+  end
+  local function is_drive(tok)         -- "C:" の1トークン or "C" ":" の2トークン
+    return tok.t == "Str" and tok.text:match("^%u:$") ~= nil
+  end
+  local function starts_with_drive(i0)
+    if i0 <= n and is_drive(inlines[i0]) then
+      return true, i0+1, inlines[i0].text
+    end
+    if i0 <= n-1
+      and inlines[i0].t=="Str" and inlines[i0].text:match("^%u$")
+      and inlines[i0+1].t=="Str" and inlines[i0+1].text==":"
+    then
+      return true, i0+2, inlines[i0].text .. ":"
+    end
+    return false
+  end
+  local function is_trailing_punct(tok)
+    return tok and tok.t=="Str" and tok.text:match("^[%.,;:!%?%)%]%}」』、。]$") ~= nil
   end
 
-  for _, inline in ipairs(el.content) do
-    if inline.t == "Str" then
-      local replaced, was_changed = replace_controlling_TeX_in_str(inline.text)
-      if was_changed then
-        table.insert(new_inlines, pandoc.RawInline("latex", replaced))
-        changed = true
-        index = index + 1
+  while i <= n do
+    local ok, j, head = starts_with_drive(i)
+    if ok then
+      if j <= n and inlines[j].t=="Str" and inlines[j].text=="\\" then
+        local buf = head .. "\\"
+        j = j + 1
+        while j <= n and is_path_piece(inlines[j]) do
+          buf = buf .. inlines[j].text
+          j = j + 1
+        end
+        table.insert(out, pandoc.RawInline("latex", "\\texttt{\\detokenize{" .. buf .. "}}"))
+        if is_trailing_punct(inlines[j]) then table.insert(out, inlines[j]); j = j + 1 end
+        i = j
       else
-        table.insert(new_inlines, inline)
+        table.insert(out, inlines[i]); i = i + 1
       end
     else
-      table.insert(new_inlines, inline)
+      table.insert(out, inlines[i]); i = i + 1
     end
   end
+  return out
+end
 
-  if changed then
-    return func(new_inlines)
-  else
-    return el  -- 元のまま返す
+-- Para/Plain をその場で処理：先にパス隔離 → 残り Str を1パスエスケープ
+local function escape_tex_in_place(el)
+  -- パスを RawInline(latex) \texttt{\detokenize{...}} に
+  el.content = protect_windows_paths_in_inlines(el.content)
+
+  if FORMAT and FORMAT:match("latex") then
+    local out = {}
+    for _, inl in ipairs(el.content) do
+      if inl.t == "Str" then
+        out[#out+1] = pandoc.RawInline("latex", escape_tex_string(inl.text))
+      else
+        out[#out+1] = inl
+      end
+    end
+    el.content = out
   end
+  return el
 end
 
-function Header(el)
-  return transform_images_in_block(el)
+-- リストの中身(Para/Plain)にも必ず適用する保険
+local function map_list_items(items)
+  for _, listitem in ipairs(items) do
+    for j, blk in ipairs(listitem) do
+      if blk.t == "Para" or blk.t == "Plain" then
+        listitem[j] = escape_tex_in_place(blk)
+      else
+        listitem[j] = pandoc.walk_block(blk, {
+          Para  = escape_tex_in_place,
+          Plain = escape_tex_in_place,
+        })
+      end
+    end
+  end
+  return items
 end
 
-function Para(el)
-    el = transform_maru_in_str(el)
-    -- ↓無効化するにはこれコメントアウト
-    el = transform_controlling_TeX_in_str(el)
-  return transform_images_in_block(el)
-end
+-- フック群
+function Para(el)  return escape_tex_in_place(el) end
+function Plain(el) return escape_tex_in_place(el) end
+function BulletList(el)  el.content = map_list_items(el.content); return el end
+function OrderedList(el) el.content = map_list_items(el.content); return el end
 
-function Plain(el)
-    el = transform_maru_in_str(el)
-    -- ↓無効化するにはこれコメントアウト
-    el = transform_controlling_TeX_in_str(el)
-  return transform_images_in_block(el)
-end
+-- 見出しや他ブロックは触らない
+function Header(el) return el end
+
+-- function transform_controlling_TeX_in_str(el)
+--   local changed = false
+--   local new_inlines = {}
+--   local func = {}
+--   local index = 0
+--   if el.t == "Para" then
+--       func = pandoc.Para
+--   elseif el.t == "Plain" then
+--       func = pandoc.Plain
+--   end
+
+--   for _, inline in ipairs(el.content) do
+--     if inline.t == "Str" then
+--       local replaced, was_changed = replace_controlling_TeX_in_str(inline.text)
+--       if was_changed then
+--         table.insert(new_inlines, pandoc.RawInline("latex", replaced))
+--         changed = true
+--         index = index + 1
+--       else
+--         table.insert(new_inlines, inline)
+--       end
+--     else
+--       table.insert(new_inlines, inline)
+--     end
+--   end
+
+--   if changed then
+--     return func(new_inlines)
+--   else
+--     return el  -- 元のまま返す
+--   end
+-- end
+
+-- function Header(el)
+--   -- return transform_images_in_block(el)
+--   return el
+-- end
+
+-- function Para(el)
+--     -- dump_inlines("After", el.content)
+--     el = transform_maru_in_str(el)
+--     -- ↓順序考慮ナシエスケープ
+--     -- el = transform_controlling_TeX_in_str(el)
+--     el.content = protect_windows_paths_in_inlines(el.content)  -- ① 先にパス隔離（1回だけ RawInline）
+--     if FORMAT:match("latex") then                               -- ② 残りの Str だけ順序固定でエスケープ
+--       local out = {}
+--       for _, inl in ipairs(el.content) do
+--         if inl.t == "Str" then
+--           table.insert(out, pandoc.RawInline("latex", escape_tex_string(inl.text)))
+--         else
+--           table.insert(out, inl)
+--         end
+--       end
+--       el.content = out
+--     end
+--     return transform_images_in_block(el)
+-- end
+
+-- function Plain(el)
+--     dump_inlines("After", el.content)
+--     el = transform_maru_in_str(el)
+--     -- ↓順序考慮ナシエスケープ
+--     -- el = transform_controlling_TeX_in_str(el)
+--     el.content = protect_windows_paths_in_inlines(el.content)
+--     if FORMAT:match("latex") then
+--       local out = {}
+--       for _, inl in ipairs(el.content) do
+--         if inl.t == "Str" then
+--           table.insert(out, pandoc.RawInline("latex", escape_tex_string(inl.text)))
+--         else
+--           table.insert(out, inl)
+--         end
+--       end
+--       el.content = out
+--     end
+--     return transform_images_in_block(el)
+-- end
+
+-- function Str(el)
+--   if FORMAT and FORMAT:match("latex") then
+--     -- 既に \texttt{\detokenize{...}} を入れた RawInline には当たらない
+--     return pandoc.RawInline("latex", escape_tex_string(el.text))
+--   end
+--   return el
+-- end
+
