@@ -48,15 +48,6 @@ x^2 + y^2
 \LaTeX \textbf{bold}
 ```
 
-## 数式（$…$ はそのまま）
-
-インライン: $x^2 + y^2 = z^2$
-
-ディスプレイ:
-
-$$
-E = mc^2
-$$
 
 ## 矢印・記号
 →：`->`, ⇔：`<->`  
@@ -77,3 +68,17 @@ $$
 - 文末＆行頭: 文末\%  
 次行先頭\#
 次行先頭\$
+
+
+# 画像パターン テスト
+
+## チェッカー（格子）: 大→小
+![checker64](img/checker_64px.png)
+![checker32](img/checker_32px.png)
+![checker16](img/checker_16px.png)
+![checker8](img/checker_8px.png)
+
+## ドット半調: 粒度ちがい
+![doto8x8](img/dotgrad_o8x8.png)
+![doto4x4](img/dotgrad_o4x4.png)
+![doto2x2](img/dotgrad_o2x2.png)

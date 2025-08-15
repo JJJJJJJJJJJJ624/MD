@@ -18,7 +18,6 @@
 \newcommand{\fixedhrule}{
   \noindent\rule{0.8\linewidth}{0.4pt}
 }
-\usepackage{underscore}
 
 \usepackage{tcolorbox}
 \usepackage{listings}
@@ -55,3 +54,24 @@
 
 % --- ここまで 追記 --------------------------------
 
+\makeatletter
+\renewcommand{\maketitle}{
+  \begin{center}
+    {\LARGE\bfseries \@title \par}
+    \vspace{1em}
+  \end{center}
+
+  \begin{flushright}  % 右寄せブロック開始
+    {\small \@author \par}              % 著者
+    \vspace{0.5em}
+    {\small \@date \par}                % 日付
+    \vspace{0.5em}\rule{\linewidth}{0.4pt} % 薄い横線
+  \end{flushright}  
+
+  }
+\makeatother
+
+\usepackage{tikz}
+\newcommand{\maru}[1]{%
+  \tikz[baseline=(char.base)]\node[shape=circle,draw,inner sep=1pt] (char) {#1};%
+}

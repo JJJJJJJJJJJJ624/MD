@@ -3,30 +3,11 @@ function HorizontalRule()
   return pandoc.RawBlock("latex", "\\noindent\\rule{1.0\\linewidth}{0.4pt}")
 end
 
--- -- CodeBlock の表示スタイル
--- function CodeBlock(block)
---   if FORMAT == "latex" then
---     return pandoc.RawBlock("latex", [[
--- \begin{tcolorbox}[mycode]
--- ]] .. block.text .. [[
--- \end{tcolorbox}
--- ]])
---   else
---     return block
---   end
--- end
-
 --安全print
 function print_s(str)
     io.stderr:write(str .. "\n")   -- こちらなら Pandoc の JSON を汚さない
 end
 
--- utf8_find関数
--- s     : UTF-8文字列
--- pattern: UTF-8文字列の検索パターン
--- init  : オプション。検索開始バイト位置(省略時は1)
--- 戻り値: 見つかった場合 -> (開始バイト位置, 終了バイト位置)
---         見つからない場合 -> nil
 function utf8_find(s, pattern, init)
   init = init or 1
   if init < 1 then
@@ -43,9 +24,6 @@ function utf8_find(s, pattern, init)
   for bytePos, code in utf8.codes(pattern) do
     table.insert(p_cp, code) -- パターンはコードだけで十分
   end
-
---   print_s(dump(s_cp))
---   print_s(dump(p_cp))
 
   -- パターンのコードポイント数
   local plen = #p_cp
@@ -90,12 +68,6 @@ function utf8_find(s, pattern, init)
 end
 
 
--- utf8_replace関数
--- s      : UTF-8文字列
--- pattern: 置換したい(検索)パターン(UTF-8文字列)
--- repl   : 置き換え先文字列(UTF-8)
--- limit  : 置換回数の上限。省略時はすべて置換
--- 戻り値 : 置換後の文字列
 function utf8_replace(s, pattern, repl, limit)
   limit = limit or math.huge  -- 指定がない場合は無制限
 
@@ -419,11 +391,6 @@ local function create_figure_blocks(images, chunk_size)
   end
   return blocks
 end
-
-
-
-
-
 
 
 --[[
@@ -753,8 +720,16 @@ local function map_list_items(items)
 end
 
 -- フック群
-function Para(el)  return escape_tex_in_place(el) end
-function Plain(el) return escape_tex_in_place(el) end
+function Para(el)
+  el = escape_tex_in_place(el)            -- 先に記号エスケープ＆パス防護
+  return transform_images_in_block(el) or el  -- 次に画像グルーピング/サイズ化
+end
+
+function Plain(el)
+  el = escape_tex_in_place(el)
+  return transform_images_in_block(el) or el
+end
+
 function BulletList(el)  el.content = map_list_items(el.content); return el end
 function OrderedList(el) el.content = map_list_items(el.content); return el end
 
