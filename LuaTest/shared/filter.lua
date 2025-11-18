@@ -454,7 +454,7 @@ local function make_image_latex(src, caption, count)
     -- 1枚だけ: height=… で高さ制限
     return string.format([[\begin{figure}[H]
     \centering
-    \includegraphics[keepaspectratio, height=0.3\textheight]{%s}
+    \includegraphics[keepaspectratio, height=0.3\textheight, width=\textwidth]{%s}
     \caption{%s}
 \end{figure}]], src, cap)
   else
@@ -528,6 +528,9 @@ local function transform_images_in_inlines(inlines)
   end
 
   for _, inl in ipairs(inlines) do
+      print("#####################")
+      print(inl.t)
+      print("#####################")
     if inl.t == "Image" then
       table.insert(imageBuffer, inl)
     else
@@ -540,6 +543,8 @@ local function transform_images_in_inlines(inlines)
   if newInlines[#newInlines] ~= pandoc.SoftBreak() and newInlines[#newInlines] ~= pandoc.LineBreak() and newInlines[#newInlines] ~= nil and #imageBuffer > 0 then
       table.insert(newInlines, pandoc.SoftBreak())
   end
+      print("#####################")
+      print("#####################")
   flush_images()
 
   return newInlines
@@ -565,12 +570,12 @@ local function sprit_Block_Inline(mixInline, fun)
 end
 
 local function transform_images_in_block(el)
-  if not FORMAT:match("latex") then
+  if not (FORMAT:match("latex") or FORMAT:match("html")) then
     return nil
   end
 
   local replacedInlines = transform_images_in_inlines(el.content)
-
+      
   if el.t == "Para" then
     return sprit_Block_Inline(replacedInlines, pandoc.Para)
   elseif el.t == "Plain" then
@@ -618,6 +623,8 @@ function transform_maru_in_str(el)
       func = pandoc.Para
   elseif el.t == "Plain" then
       func = pandoc.Plain
+  elseif el.t == "Header" then
+      func = pandoc.Header
   end
 
   for _, inline in ipairs(el.content) do
@@ -646,8 +653,8 @@ end
 -- TeXの制御文字 → エスケープ文字
 -- TeXの制御文字のマッピング表
 local TeX_map = {
-  ["\\"] = "\\textbackslash", ["#"] = "\\#", ["%$"] = "\\$", ["%%"] = "\\%%", ["&"] = "\\&",
-  ["~"] = "\\textasciitilde", ["%^"] = "\\textasciicircum", ["{"] = "\\{{", ["}"] = "\\}",
+  ["\\"] = "\\textbackslash ", ["#"] = "\\#", ["%$"] = "\\$", ["%%"] = "\\%%", ["&"] = "\\&",
+  ["~"] = "\\textasciitilde ", ["%^"] = "\\textasciicircum ", ["{"] = "\\{{", ["}"] = "\\}",
 }
 
 local function replace_controlling_TeX_in_str(str)
@@ -671,6 +678,8 @@ function transform_controlling_TeX_in_str(el)
       func = pandoc.Para
   elseif el.t == "Plain" then
       func = pandoc.Plain
+  elseif el.t == "Header" then
+      func = pandoc.Header
   end
 
   for _, inline in ipairs(el.content) do
@@ -701,12 +710,12 @@ end
 
 function Para(el)
     el = transform_maru_in_str(el)
-    el = transform_controlling_TeX_in_str(el)
+--     el = transform_controlling_TeX_in_str(el)
   return transform_images_in_block(el)
 end
 
 function Plain(el)
     el = transform_maru_in_str(el)
-    el = transform_controlling_TeX_in_str(el)
+--     el = transform_controlling_TeX_in_str(el)
   return transform_images_in_block(el)
 end

@@ -89,3 +89,15 @@ pre code {
   display: block;
   overflow-x: auto;
 }
+
+table {
+    border-collapse: collapse; /* 枠を重ねない */
+    border-bottom: 1px solid black; /* 枠の太さ・色 */
+}
+thead {
+    border-bottom: 1px solid black; /* 枠の太さ・色 */
+    border-top: 1px solid black; /* 枠の太さ・色 */
+}
+table, th, td {
+    padding: 5px;
+}

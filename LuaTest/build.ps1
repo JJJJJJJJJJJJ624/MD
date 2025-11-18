@@ -3,6 +3,9 @@ $ErrorActionPreference = 'Stop'
 $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding  = [System.Text.Encoding]::UTF8
 
+# ==== デバッグモード ====
+$DebugMode = $true
+
 # ==== 0. パス定義 ====
 $Root     = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ManDir   = Join-Path $Root 'src'
@@ -15,7 +18,7 @@ $ErrDir   = Join-Path $ManDir 'Err'
 $versionFile = Join-Path $Root "latest_versions.txt"
 
 $Css      = Join-Path $Share 'style.css'
-$Js       = Join-Path $Share 'script.js'
+$Js       = Join-Path $Share 'script.tpl'
 $Filter   = Join-Path $Share 'filter.lua'
 $HTML_Filter   = Join-Path $Share 'html_filter.lua'
 $HTML_Temlate = Join-Path $Share 'template.html'
@@ -76,8 +79,8 @@ function Compare-Version {
     })
     # 要素数が異なる場合は、短い方を 0 で埋める
     $max = [Math]::Max($segA.Count, $segB.Count)
-    $segA = $segA + (0) * ($max - $segA.Count)
-    $segB = $segB + (0) * ($max - $segB.Count)
+    $segA = $segA + (@(0) * ($max - $segA.Count))
+    $segB = $segB + (@(0) * ($max - $segB.Count))
 
     # 上から順番に比較
     for ($i = 0; $i -lt $max; $i++) {
@@ -90,15 +93,17 @@ function Compare-Version {
 
 # ==== 2. 最新バージョンの Markdown 検出 ====
 $re = '_ve?r?([\d\.]+)\.md$'
+$re_Ver = '_v(?:er)?(\d+(?:\.\d+)*)\.md$'
 $latest = @{}
-Get-ChildItem $ManDir -Recurse -Filter '*_v*.md' | Where-Object {
+Get-ChildItem $ManDir -Recurse -Include '*.md' | Where-Object {
     $_.FullName -notmatch '\\old\\' -and
     $_.Directory.Name -notmatch '_v\d' -and
-    $_.FullName -notmatch '\\Err\\'　-and
-    $_.FullName -notmatch '\\Editing\\'
-
+    $_.FullName -notmatch '\\Err\\' -and
+    $_.FullName -notmatch '\\Editing\\'-and
+    $_.Name -match $re_Ver
 } | ForEach-Object {
-    if ($_ -match $re) {
+    if ($_.FullName -match $re) {
+        Write-Host "OK   : $($_.Name) → Ver=$($Matches[1])"
         $ver = $Matches[1]
         $key = $_.Directory.FullName
 #        if (-not $latest.ContainsKey($key) -or (Compare-Version $ver $latest[$key].Ver) -gt 0) {
@@ -112,7 +117,7 @@ Get-ChildItem $ManDir -Recurse -Filter '*_v*.md' | Where-Object {
             # oldVer が無い場合はとりあえず "0" として扱う
             "0"
         }
-        if ((Compare-Version $ver $oldVer) -gt 0) {
+        if ((Compare-Version $ver $oldVer) -eq 1) {
             # より新しい場合だけ更新
             $storedVersions[$key] = $ver  # テキスト出力用連想配列も先に更新
             $latest[$key] = [pscustomobject]@{
@@ -120,6 +125,8 @@ Get-ChildItem $ManDir -Recurse -Filter '*_v*.md' | Where-Object {
                 Ver  = $ver
             }
         }
+    } else {
+       Write-Host "FAIL : $($_.Name)"
     }
 }
 
@@ -146,7 +153,8 @@ function Run-Bin {
     param(
         [Parameter(Mandatory)][string]$Exe,
         [Parameter(Mandatory)][string[]]$ArgList,
-        [Parameter(Mandatory)][string]$SourceFilePath
+        [Parameter(Mandatory)][string]$SourceFilePath,
+        [switch] $NotCopy
     )
 
     $LogFile = [System.IO.Path]::ChangeExtension($SourceFilePath, ".log")
@@ -162,7 +170,7 @@ function Run-Bin {
     Write-Host "[$($MyInvocation.ScriptName):$($MyInvocation.ScriptLineNumber)] Run $Exe with arguments: $ArgList"
 
     # プロセス実行
-    $proc = Start-Process -FilePath $Exe -ArgumentList $ArgList -NoNewWindow -Wait -PassThru -RedirectStandardOutput $LogFile -RedirectStandardError $ErrFile
+    $proc = Start-Process -FilePath $Exe -ArgumentList $ArgList -RedirectStandardOutput $LogFile -RedirectStandardError $ErrFile -Wait -PassThru -NoNewWindow
 #    & $Exe $ArgList *>> $LogFile
 #    $ExitCode = $LASTEXITCODE
 
@@ -171,26 +179,29 @@ function Run-Bin {
         # エラー内容を出力
         Write-Warning "[$($MyInvocation.ScriptName):$($MyInvocation.ScriptLineNumber)] $Exe failed with exit code $($proc.ExitCode)."
 
-        # 先頭または末尾にあるシングルクォート/ダブルクォートを取り除くための正規表現パターン
-        $pattern = '^["'']+|["'']+$'
-        # パターンを使って先頭・末尾クォートを削除
-        $unquotedPath = $SourceFilePath -replace $pattern, ''
-        $parentDir    = Split-Path $unquotedPath -Parent
-        $relativePath = $parentDir.Substring($ManDir.Length).TrimStart("[\/]")  # manuals より下を切り出し
-        $topDir = $relativePath.Split('\')[0]                                # 最初の要素(ルート直下のフォルダ名)
+        if ($NotCopy)
+        {
+            # 先頭または末尾にあるシングルクォート/ダブルクォートを取り除くための正規表現パターン
+            $pattern = '^["'']+|["'']+$'
+            # パターンを使って先頭・末尾クォートを削除
+            $unquotedPath = $SourceFilePath -replace $pattern, ''
+            $parentDir = Split-Path $unquotedPath -Parent
+            $relativePath = $parentDir.Substring($ManDir.Length).TrimStart("[\/]")  # manuals より下を切り出し
+            $topDir = $relativePath.Split('\')[0]                                # 最初の要素(ルート直下のフォルダ名)
 
 
-        # $ManDir 以下の相対パスを取得し、Err フォルダに同じ階層構造で配置する
-        $destination  = Join-Path $ErrDir (Split-Path $relativePath)
-        $parentDir    = Split-Path $unquotedPath -Parent
+            # $ManDir 以下の相対パスを取得し、Err フォルダに同じ階層構造で配置する
+            $destination = Join-Path $ErrDir (Split-Path $relativePath)
+            $parentDir = Split-Path $unquotedPath -Parent
 
-        # フォルダ構成を事前に作成してから移動
-        New-Item -ItemType Directory -Force -Path $destination | Out-Null
-        Set-Location $ManDir
-        Copy-Item -Path $parentDir -Destination $destination -Force -Recurse
-#        Remove-Item -Path $parentDir -Recurse -Force -ErrorAction SilentlyContinue
+            # フォルダ構成を事前に作成してから移動
+            New-Item -ItemType Directory -Force -Path $destination | Out-Null
+            Set-Location $ManDir
+            Copy-Item -Path $parentDir -Destination $destination -Force -Recurse
+            #        Remove-Item -Path $parentDir -Recurse -Force -ErrorAction SilentlyContinue
 
-        Write-Warning "エラーが発生したファイルを以下に移動しました: $destination"
+            Write-Warning "エラーが発生したファイルを以下に移動しました: $destination"
+        }
 
         # throw せずに処理を続行する場合は return や continue で抜ける
         Write-Warning "スクリプトは継続されます。"
@@ -207,7 +218,7 @@ foreach ($info in $latest.Values) {
     $md        = $info.File.FullName
     $manualDir = $info.File.Directory.FullName
 
-    $relStem = $md.Substring($ManDir.Length + 1) -replace '_v.*\.md$',''
+    $relStem = $md.Substring($ManDir.Length + 1) -replace $re_Ver,''
     $htmlOut = Join-Path $OutHtml "$relStem.html"
     $pdfOut  = Join-Path $OutPdf  "$relStem.pdf"
 
@@ -229,16 +240,30 @@ foreach ($info in $latest.Values) {
     # (A) 画像自動回転（EXIFに従い、上書き保存 + バックアップ）
     $imgDir = Join-Path $manualDir 'img'
     $backupDir = Join-Path $imgDir '_backup_img'
+
+    # バックアップディレクトリ作成
     New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
 
-    Get-ChildItem -Path $imgDir -Include *.jpg, *.jpeg | ForEach-Object {
+    # jpg/jpeg を対象に処理（サブフォルダなし）
+    Get-ChildItem -Path "$imgDir\*" -Include *.jpg, *.jpeg -File | ForEach-Object {
         $imgPath = $_.FullName
         $relPath = $imgPath.Substring($imgDir.Length).TrimStart('\')
         $bakPath = Join-Path $backupDir $relPath
+
+        # バックアップファイルがすでに存在すればスキップ
+        if (Test-Path $bakPath) {
+            Write-Host "スキップ（既にバックアップ済）: $imgPath"
+            return
+        }
+
+        # バックアップ保存
         New-Item -ItemType Directory -Path (Split-Path $bakPath) -Force | Out-Null
         Copy-Item -Path $imgPath -Destination $bakPath -Force
+
+        # 画像回転（EXIFに従い）
         try {
-            Run-Bin -Exe 'magick' -ArgList @('mogrify', '-auto-orient', "`"$imgPath`"")
+            Run-Bin -Exe 'magick' -ArgList @('mogrify', '-auto-orient', "`"$($imgPath -replace '\\', '/')`"") -SourceFilePath $imgPath
+            Write-Host "画像の回転に成功しました: $imgPath"
         } catch {
             Write-Warning "画像の回転に失敗しました: $imgPath"
         }
@@ -260,7 +285,7 @@ foreach ($info in $latest.Values) {
     )
     # markdown-implicit_figures-yaml_metadata_block
     $result = Run-Bin -Exe $Pandoc -ArgList $argsHtml -SourceFilePath $md
-    if (-not $result) {
+    if (-not ($result -or $DebugMode)) {
         Remove-Item -Path (Split-Path $htmlOut) -Recurse -Force -ErrorAction SilentlyContinue
         $storedVersions.Remove((Split-Path $md))
         # スキップして次のアイテムへ移る
@@ -289,7 +314,7 @@ foreach ($info in $latest.Values) {
     )
     # markdown-implicit_figures-yaml_metadata_block
     $result = Run-Bin -Exe $Pandoc -ArgList $argsTex -SourceFilePath $md
-    if (-not $result) {
+    if (-not ($result -or $DebugMode)) {
         Remove-Item -Path (Split-Path $htmlOut) -Recurse -Force -ErrorAction SilentlyContinue
         Remove-Item -Path (Split-Path $pdfOut ) -Recurse -Force -ErrorAction SilentlyContinue
         $storedVersions.Remove((Split-Path $md))
@@ -306,7 +331,7 @@ foreach ($info in $latest.Values) {
     )
     Write-Output $argsLaTeX
     $result = Run-Bin -Exe "lualatex" -ArgList $argsLaTeX -SourceFilePath $md
-    if (-not $result) {
+    if (-not ($result -or $DebugMode)) {
         Remove-Item -Path (Split-Path $htmlOut) -Recurse -Force -ErrorAction SilentlyContinue
         Remove-Item -Path (Split-Path $pdfOut ) -Recurse -Force -ErrorAction SilentlyContinue
         $storedVersions.Remove((Split-Path $md))
@@ -315,7 +340,7 @@ foreach ($info in $latest.Values) {
     }
     Start-Sleep -Seconds 1   # ← ここで1秒待機
     $result = Run-Bin -Exe "lualatex" -ArgList $argsLaTeX -SourceFilePath $md   # 2回コンパイル（必要に応じて）
-    if (-not $result) {
+    if (-not ($result -or $DebugMode)) {
         Remove-Item -Path (Split-Path $htmlOut) -Recurse -Force -ErrorAction SilentlyContinue
         Remove-Item -Path (Split-Path $pdfOut ) -Recurse -Force -ErrorAction SilentlyContinue
         $storedVersions.Remove((Split-Path $md))

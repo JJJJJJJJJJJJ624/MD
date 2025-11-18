@@ -55,3 +55,52 @@
 
 % --- ここまで 追記 --------------------------------
 
+\usepackage{enumitem}
+\usepackage{amssymb}
+
+% 箇条書きのネスト数を 9 段階まで拡張
+\setlistdepth{9}
+\renewlist{itemize}{itemize}{9}
+\setlist[itemize]{label=\textbullet}  % 全階層の基本設定
+
+% 必要に応じて階層ごとの記号を変える
+\setlist[itemize,1]{label=\textbullet}
+\setlist[itemize,2]{label=--}
+\setlist[itemize,3]{label=*}
+\setlist[itemize,4]{label=\textopenbullet}
+\setlist[itemize,5]{label=\tiny$\blacksquare$}
+\setlist[itemize,6]{label=\tiny$\square$}
+\setlist[itemize,7]{label=\tiny$\triangleright$}
+\setlist[itemize,8]{label=\tiny$\circ$}
+\setlist[itemize,9]{label=\tiny$\diamond$}
+
+
+
+% --- enumerateのラベル再定義を抑制 ---
+\makeatletter
+\def\labelenumi{\arabic{enumi}.}
+\def\labelenumii{\arabic{enumii}.}
+\def\labelenumiii{\arabic{enumiii}.}
+\def\labelenumiv{\arabic{enumiv}.}
+% pandocの\def再定義を打ち消すため、再度上書き
+\AtBeginDocument{
+  \def\labelenumi{\arabic{enumi}.}
+  \def\labelenumii{\arabic{enumii}.}
+  \def\labelenumiii{\arabic{enumiii}.}
+  \def\labelenumiv{\arabic{enumiv}.}
+}
+\makeatother
+
+% enumerate環境を9階層に拡張
+\renewlist{enumerate}{enumerate}{9}
+\setlist[enumerate]{label=\arabic*.}      % 1.
+% 各階層の番号フォーマットを指定
+\setlist[enumerate,1]{label=\arabic*.}      % 1.
+\setlist[enumerate,2]{label=\alph*)}        % a)
+\setlist[enumerate,3]{label=\roman*)}       % i)
+\setlist[enumerate,4]{label=\Alph*)}        % A)
+\setlist[enumerate,5]{label=\arabic*)}      % 1)
+\setlist[enumerate,6]{label=\alph**)}       % a**)
+\setlist[enumerate,7]{label=\roman**)}      % i**)
+\setlist[enumerate,8]{label=\Alph**)}       % A**)
+\setlist[enumerate,9]{label=\arabic**)}     % 1**)

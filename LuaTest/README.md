@@ -50,7 +50,7 @@ pandoc manuals/sample.md `
   --embed-resources `
   --standalone `
   --css shared/style.css `
-  --include-after-body=shared/script.js `
+  --include-after-body=shared/script.tpl `
   --resource-path=manuals
 ```
 
