@@ -407,9 +407,9 @@ function New-IndexHtml {
     $now = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
     $html = @"
 <!DOCTYPE html>
-<html lang=\"ja\">
+<html lang="ja">
 <head>
-  <meta charset=\"UTF-8\">
+  <meta charset="UTF-8">
   <title>$Title</title>
   <style>
     body{font-family:YuGothic,Arial,Helvetica,sans-serif;margin:2rem;}
