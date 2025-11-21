@@ -719,3 +719,10 @@ function Plain(el)
 --     el = transform_controlling_TeX_in_str(el)
   return transform_images_in_block(el)
 end
+
+-- 番号付きリストのスタイルをリセットし、Pandocによる \def\labelenum... の生成を抑制する
+function OrderedList(el)
+  el.listAttributes.style = 'DefaultStyle'
+  el.listAttributes.delimiter = 'DefaultDelim'
+  return el
+end

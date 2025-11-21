@@ -402,7 +402,7 @@ function New-IndexHtml {
              Sort-Object FullName |
              ForEach-Object {
                  $rel = $_.FullName.Substring($dir.Path.Length + 1) -replace '\\','/'
-                 "<li><a href='$rel'>$rel</a></li>"
+                 "<li><a href='./Manual/$rel'>$rel</a></li>"
              }
     $now = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
     $html = @"
@@ -425,7 +425,7 @@ function New-IndexHtml {
 </body>
 </html>
 "@
-    $indexPath = Join-Path $dir 'index.html'
+    $indexPath = Join-Path $dir 'manual_index.html'
     $html | Out-File -Encoding UTF8 $indexPath
     Write-Host "index.html generated -> $indexPath"
 }

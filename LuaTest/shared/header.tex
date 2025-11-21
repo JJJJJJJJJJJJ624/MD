@@ -75,22 +75,6 @@
 \setlist[itemize,9]{label=\tiny$\diamond$}
 
 
-
-% --- enumerateのラベル再定義を抑制 ---
-\makeatletter
-\def\labelenumi{\arabic{enumi}.}
-\def\labelenumii{\arabic{enumii}.}
-\def\labelenumiii{\arabic{enumiii}.}
-\def\labelenumiv{\arabic{enumiv}.}
-% pandocの\def再定義を打ち消すため、再度上書き
-\AtBeginDocument{
-  \def\labelenumi{\arabic{enumi}.}
-  \def\labelenumii{\arabic{enumii}.}
-  \def\labelenumiii{\arabic{enumiii}.}
-  \def\labelenumiv{\arabic{enumiv}.}
-}
-\makeatother
-
 % enumerate環境を9階層に拡張
 \renewlist{enumerate}{enumerate}{9}
 \setlist[enumerate]{label=\arabic*.}      % 1.
@@ -100,7 +84,7 @@
 \setlist[enumerate,3]{label=\roman*)}       % i)
 \setlist[enumerate,4]{label=\Alph*)}        % A)
 \setlist[enumerate,5]{label=\arabic*)}      % 1)
-\setlist[enumerate,6]{label=\alph**)}       % a**)
-\setlist[enumerate,7]{label=\roman**)}      % i**)
-\setlist[enumerate,8]{label=\Alph**)}       % A**)
-\setlist[enumerate,9]{label=\arabic**)}     % 1**)
+\setlist[enumerate,6]{label=\alph*.)}        % a.)
+\setlist[enumerate,7]{label=\roman*.)}       % i.)
+\setlist[enumerate,8]{label=\Alph*.)}        % A.)
+\setlist[enumerate,9]{label=\arabic*.)}      % 1.)
