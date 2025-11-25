@@ -16,7 +16,6 @@ $ErrDir   = Join-Path $ManDir 'Err'
 
 # バージョン情報を保存するテキストファイルのパス
 $versionFile = Join-Path $Root "latest_versions.txt"
-
 $Css      = Join-Path $Share 'style.css'
 $Js       = Join-Path $Share 'script.tpl'
 $Filter   = Join-Path $Share 'filter.lua'
@@ -55,7 +54,7 @@ function Compare-Version {
     param ([string]$a,
         [string]$b)
 
-    # a,b が空なら "0" にしておく
+    # a,b が空なら 0 にしておく
     if ([string]::IsNullOrEmpty($a)) {
         $a = "0"
     }
@@ -103,7 +102,7 @@ Get-ChildItem $ManDir -Recurse -Include '*.md' | Where-Object {
     $_.Name -match $re_Ver
 } | ForEach-Object {
     if ($_.FullName -match $re) {
-        Write-Host "OK   : $($_.Name) → Ver=$($Matches[1])"
+        Write-Host "OK   : $($_.Name) -> Ver=$($Matches[1])"
         $ver = $Matches[1]
         $key = $_.Directory.FullName
 #        if (-not $latest.ContainsKey($key) -or (Compare-Version $ver $latest[$key].Ver) -gt 0) {
@@ -114,7 +113,7 @@ Get-ChildItem $ManDir -Recurse -Include '*.md' | Where-Object {
         $oldVer = if ($storedVersions.ContainsKey($key)) {
             $storedVersions[$key]
         } else {
-            # oldVer が無い場合はとりあえず "0" として扱う
+            # oldVer が無い場合はとりあえず 0 として扱う
             "0"
         }
         if ((Compare-Version $ver $oldVer) -eq 1) {
@@ -131,25 +130,9 @@ Get-ChildItem $ManDir -Recurse -Include '*.md' | Where-Object {
 }
 
 # ==== 3. 実行ヘルパ ====
-#function Run-Bin {
-#    param(
-#        [Parameter(Mandatory)][string]$Exe,
-#        [Parameter(Mandatory)][string[]]$ArgList
-#    )
-#    # 実行コマンドと行番号を表示
-#    Write-Host "[$($MyInvocation.ScriptName):$($MyInvocation.ScriptLineNumber)] Run $Exe with arguments: $ArgList"
-#
-#    # プロセス実行
-#    $proc = Start-Process -FilePath $Exe -ArgumentList $ArgList -NoNewWindow -Wait -PassThru
-#
-#    # 終了コードをチェックし、エラーがあれば位置情報と一緒に表示
-#    if ($proc.ExitCode -ne 0) {
-#        throw "[$($MyInvocation.ScriptName):$($MyInvocation.ScriptLineNumber)] $Exe failed with exit code $($proc.ExitCode)."
-#    }
-#
-#}
 
 function Run-Bin {
+
     param(
         [Parameter(Mandatory)][string]$Exe,
         [Parameter(Mandatory)][string[]]$ArgList,
@@ -182,13 +165,12 @@ function Run-Bin {
         if ($NotCopy)
         {
             # 先頭または末尾にあるシングルクォート/ダブルクォートを取り除くための正規表現パターン
-            $pattern = '^["'']+|["'']+$'
-            # パターンを使って先頭・末尾クォートを削除
-            $unquotedPath = $SourceFilePath -replace $pattern, ''
-            $parentDir = Split-Path $unquotedPath -Parent
-            $relativePath = $parentDir.Substring($ManDir.Length).TrimStart("[\/]")  # manuals より下を切り出し
-            $topDir = $relativePath.Split('\')[0]                                # 最初の要素(ルート直下のフォルダ名)
 
+            # パターンを使って先頭・末尾クォートを削除
+            $unquotedPath = $SourceFilePath.Trim('"', "'")
+            $parentDir = Split-Path $unquotedPath -Parent
+            $relativePath = $parentDir.Substring($ManDir.Length).TrimStart("[\/]")
+            $topDir = $relativePath.Split('\')[0]
 
             # $ManDir 以下の相対パスを取得し、Err フォルダに同じ階層構造で配置する
             $destination = Join-Path $ErrDir (Split-Path $relativePath)
@@ -222,16 +204,6 @@ foreach ($info in $latest.Values) {
     $htmlOut = Join-Path $OutHtml "$relStem.html"
     $pdfOut  = Join-Path $OutPdf  "$relStem.pdf"
 
-#    タイムスタンプより最新かを判断、NAS上だど時間情報がでたらめなので消去
-#    if ( (Test-Path $htmlOut) -and (Test-Path $pdfOut) ) {
-#        $srcTime  = (Get-Item $md).LastWriteTimeUtc
-#        $htmlTime = (Get-Item $htmlOut).LastWriteTimeUtc
-#        $pdfTime  = (Get-Item $pdfOut).LastWriteTimeUtc
-#        if (($htmlTime -ge $srcTime) -and ($pdfTime -ge $srcTime)) {
-#            Write-Host "Skip (up-to-date): $relStem"
-#            continue
-#        }
-#    }
 
     # 出力先フォルダの作成
     New-Item -ItemType Directory -Path (Split-Path $htmlOut) -Force | Out-Null
@@ -325,7 +297,7 @@ foreach ($info in $latest.Values) {
     # (2) lualatex で PDF を生成 (texファイルと同じフォルダに出力したい)
     $texDir = Split-Path $texOut     # 「.tex と同じフォルダ」を取得
     $argsLaTeX = @(
-        "-output-directory=`"$($texDir -replace '\\', '/')`"",  # 出力先ディレクトリ指定
+        "-output-directory=`"$($texDir -replace '\\', '/')"`,  # 出力先ディレクトリ指定
         "-interaction=nonstopmode",      # コンパイルエラーでも止まらず処理継続
         "`"$($texOut -replace '\\', '/')`""     # 対象の .tex ファイル
     )
@@ -339,7 +311,7 @@ foreach ($info in $latest.Values) {
         continue
     }
     Start-Sleep -Seconds 1   # ← ここで1秒待機
-    $result = Run-Bin -Exe "lualatex" -ArgList $argsLaTeX -SourceFilePath $md   # 2回コンパイル（必要に応じて）
+    $result = Run-Bin -Exe "lualatex" -ArgList $argsLaTeX -SourceFilePath $md  # 2回コンパイル
     if (-not ($result -or $DebugMode)) {
         Remove-Item -Path (Split-Path $htmlOut) -Recurse -Force -ErrorAction SilentlyContinue
         Remove-Item -Path (Split-Path $pdfOut ) -Recurse -Force -ErrorAction SilentlyContinue
@@ -348,88 +320,43 @@ foreach ($info in $latest.Values) {
         continue
     }
 
-#    # .texファイルのフルパスが入っていると仮定
-#    $texFileFullPath = $texOut  # ここに .tex ファイルのパスが入っている
-#
-#    # PDF出力先を組み立てる (拡張子を .pdf に)
-#    $pandocPdfOutPath = Join-Path ($texDir) ("$pdfOut.pdf")
-#
-#    # もし LuaLaTeX の lua-filter を使う必要があれば、--lua-filter=... の指定を入れる
-#    # 例: '--lua-filter="C:\Users\Palladium\Documents\PycharmProjects\MD\LuaTest\shared\filter.lua"'
-#    $pandocArgs = @(
-#        '-f', 'latex',               # 入力フォーマット: LaTeX
-#        '-t', 'pdf',                 # 出力フォーマット: PDF
-#        '--pdf-engine=lualatex',     # PDF生成に LuaLaTeX を使う
-#        "-H", "`"$Header`"",         # header.tex 指定用
-#        "-V", "documentclass=jlreq",
-#        "-V", "luatexjapresetoptions=ipa",
-#        "-V", "indent",
-#        "--resource-path=`"$manualDir`"",
-#        "--resource-path=`"$Share`"",
-#        '-o', "`"$pandocPdfOutPath`"",     # 出力先指定
-#        "`"$texFileFullPath`""            # 入力ファイル(.tex)
-#    )
-#
-#    Write-Output $pandocArgs
-#
-#    # 上記で用意した引数をもとに pandoc を実行
-#    Run-Bin -Exe "pandoc" -ArgList $pandocArgs
-
-
+#    謎エラー出てしまってたのでここら辺のコメントアウト削除
 
     Pop-Location
 
 }
 
 # ==== 5. バージョン情報の保存 ====
-# 今回確定したバージョン($storedVersions)をテキストファイルに上書き
-@("# DirectoryFullPath|Version") | Out-File -FilePath $versionFile -Encoding UTF8
-$storedVersions.GetEnumerator() | ForEach-Object {
-    "$($_.Key)|$($_.Value)"
-} | Out-File -FilePath $versionFile -Append -Encoding UTF8
 
-# ==== 6. インデックス生成 ====
-
-function New-IndexHtml {
-    param(
-        [Parameter(Mandatory)][string]$TargetDir,
-        [Parameter(Mandatory)][string]$Suffix,
-        [Parameter(Mandatory)][string]$Title
-    )
-    $dir = Resolve-Path $TargetDir
-    if (-not $dir) { Write-Warning "No such dir: $TargetDir"; return }
-    $items = Get-ChildItem -Path $dir -Recurse -Filter "*.$Suffix" |
-             Sort-Object FullName |
-             ForEach-Object {
-                 $rel = $_.FullName.Substring($dir.Path.Length + 1) -replace '\\','/'
-                 "<li><a href='./Manual/$rel'>$rel</a></li>"
-             }
-    $now = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
-    $html = @"
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title</title>
-  <style>
-    body{font-family:YuGothic,Arial,Helvetica,sans-serif;margin:2rem;}
-    li{margin:4px 0;}
-  </style>
-</head>
-<body>
-  <h1>$Title</h1>
-  <p>Last updated date: $now</p>
-  <ul>
-    $($items -join "`n    ")
-  </ul>
-</body>
-</html>
-"@
-    $indexPath = Join-Path $dir 'manual_index.html'
-    $html | Out-File -Encoding UTF8 $indexPath
-    Write-Host "index.html generated -> $indexPath"
+# storedVersions が未定義のケースに備えて初期化
+if (-not (Get-Variable -Name storedVersions -Scope Script -ErrorAction SilentlyContinue)) {
+    $script:storedVersions = @{}
 }
 
+# 書き出す行を配列にためる
+$lines = @()
+$lines += '# DirectoryFullPath|Version'
 
-New-IndexHtml -TargetDir $OutHtml -Suffix 'html' -Title 'Manuals(HTML)'
-New-IndexHtml -TargetDir $OutPdf -Suffix 'pdf' -Title 'Manuals(PDF)'
+foreach ($entry in $storedVersions.GetEnumerator()) {
+    $dir = $entry.Key
+    $ver = $entry.Value
+    # ダブルクォートは使わず、単純連結にする
+    $lines += ($dir + '|' + $ver)
+}
+
+# まとめて書き出す
+$lines | Out-File -FilePath $versionFile -Encoding UTF8
+
+# ==== 6. インデックス生成 (Python スクリプト呼び出し) ====
+
+# Python 実行コマンド
+# 環境に応じて 'python3' や 'py' に変える
+$python = 'python'
+
+$makeIndex = Join-Path $Root 'make_index.py'
+
+
+# HTML 用 index
+& $python $makeIndex $OutHtml 'html' 'Manuals(HTML)'
+# PDF 用 index
+& $python $makeIndex $OutPdf  'pdf'  'Manuals(PDF)'
